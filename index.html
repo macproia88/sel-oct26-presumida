@@ -137,7 +137,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
   <details class="guide" id="como">
     <summary>Cómo se calculó</summary>
     <ul>
-      <li><b>De dónde salen los datos:</b> de cada CV que llegó a lapresumidapastas@gmail.com del 23 al 28/10. Nombre, teléfono, mail y barrio, copiados del CV. El puesto sale del asunto del mail; si no lo dice, se deduce y se marca "deducido".</li>
+      <li><b>De dónde salen los datos:</b> de cada CV que llegó a lapresumidapastas@gmail.com desde el 23/10 hasta la fecha de corte que figura arriba. Los CVs nuevos se suman en cada actualización. Nombre, teléfono, mail y barrio, copiados del CV. El puesto sale del asunto del mail; si no lo dice, se deduce y se marca "deducido".</li>
       <li><b>Meses en cada trabajo:</b> del mes que empezó al que terminó, contando los dos (03/2021 a 02/2023 = 24). "Actualidad" = octubre 2026. Si el CV pone solo el año, se toma julio de ese año.</li>
       <li><b>Promedio por trabajo:</b> suma de meses de los trabajos con fecha ÷ cantidad de esos trabajos. Los que no tienen fecha no entran.</li>
       <li><b>Permanencia:</b> Estable = promedio de 2 años o más. Cambia seguido = promedio menor a 1 año y 2 o más trabajos de menos de 1 año. Sin fechas = ningún trabajo tiene fechas. El resto, Intermedio.</li>
@@ -151,7 +151,6 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
 
 <script>
 (async function(){
-  // ---- descifrado (AES-GCM con clave derivada de la contraseña por PBKDF2) ----
   const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
   let KEY = null;
   async function derivar(pw){
@@ -381,7 +380,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
     const frag = document.createDocumentFragment(); rows.forEach(c => frag.append(card(c))); list.append(frag);
   }
 
-  $('#sub').textContent = D.mails + ' mails con CV · ' + D.personas + ' personas distintas · actualizado ' + D.generado;
+  $('#sub').textContent = 'CVs recibidos hasta el ' + (D.corte || D.generado) + ' · ' + D.mails + ' mails · ' + D.personas + ' personas';
   fillSelects(); renderTabs(); render();
   ['#q','#fPart','#fGrupo','#fEstado'].forEach(s => $(s).addEventListener('input', render));
 

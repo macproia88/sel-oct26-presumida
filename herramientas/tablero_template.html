@@ -1,0 +1,353 @@
+<title>Selección La Presumida</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: lista de fichas tipo legajo, una columna en celular, encabezado con pestañas fijas arriba */
+:root{
+  --paper:#FBF8EF; --card:#FFFFFF; --ink:#1E1B14; --muted:#6B6556; --line:#E7E1CF;
+  --yolk:#F2C200; --yolk-soft:#FFF3BF; --ink-on-yolk:#1E1B14;
+  --ok:#2E7D4F; --ok-soft:#E3F2E8; --warn:#A86A00; --warn-soft:#FDF0D5; --bad:#B23B3B; --bad-soft:#FBE6E4; --grey-soft:#EFECE3;
+  --link:#1F5FBF;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Source Sans 3","Segoe UI",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#16140F; --card:#211E17; --ink:#F3EEDF; --muted:#AAA28C; --line:#38332705;
+  --line:#383327; --yolk:#F2C200; --yolk-soft:#3A3113; --ink-on-yolk:#1E1B14;
+  --ok:#7CC79A; --ok-soft:#1D3326; --warn:#E8B04E; --warn-soft:#3A2D12; --bad:#EE8C84; --bad-soft:#3D1E1C; --grey-soft:#2B2820;
+  --link:#8AB4F8; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --paper:#16140F; --card:#211E17; --ink:#F3EEDF; --muted:#AAA28C;
+  --line:#383327; --yolk:#F2C200; --yolk-soft:#3A3113; --ink-on-yolk:#1E1B14;
+  --ok:#7CC79A; --ok-soft:#1D3326; --warn:#E8B04E; --warn-soft:#3A2D12; --bad:#EE8C84; --bad-soft:#3D1E1C; --grey-soft:#2B2820;
+  --link:#8AB4F8; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--ink)}
+.wrap{max-width:1100px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{background:var(--ink);color:var(--paper)}
+header.top .wrap{padding-block:18px 14px;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:end;justify-content:space-between}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(28px,6vw,40px);line-height:1;margin:0;letter-spacing:.3px;text-transform:uppercase;text-wrap:balance}
+h1 span{background:var(--yolk);color:var(--ink-on-yolk);padding:0 6px}
+.sub{color:#CFC8B4;font-size:13px}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
+nav.tabs .wrap{display:flex;gap:6px;overflow-x:auto;padding-block:10px;scrollbar-width:none}
+.tab{flex:0 0 auto;border:1.5px solid var(--ink);background:transparent;color:var(--ink);font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.3px;text-transform:uppercase;padding:6px 12px;border-radius:999px;cursor:pointer}
+.tab .c{font-family:var(--body);font-size:12px;font-weight:700;margin-left:6px;opacity:.75}
+.tab[aria-selected="true"]{background:var(--yolk);border-color:var(--yolk);color:var(--ink-on-yolk)}
+.tab:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--yolk);outline-offset:2px}
+.intro{padding-block:14px 4px;color:var(--muted);font-size:14px;max-width:70ch}
+.filters{display:flex;flex-wrap:wrap;gap:8px;padding-block:10px}
+.filters input,.filters select{font:inherit;font-size:14px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+.filters input{flex:1 1 220px}
+.filters select{flex:0 1 auto}
+.count{color:var(--muted);font-size:13px;padding-bottom:6px}
+.list{display:grid;gap:10px;padding-bottom:40px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr;gap:4px 14px}
+.score{grid-row:span 3;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:52px}
+.score b{font-family:var(--display);font-size:30px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.score small{font-size:11px;color:var(--muted)}
+.score .pos{font-size:12px;color:var(--muted)}
+.bar{width:44px;height:5px;background:var(--grey-soft);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--yolk)}
+.head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;min-width:0}
+.name{font-weight:700;font-size:17px}
+.pill{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p-est{background:var(--ok-soft);color:var(--ok)} .p-int{background:var(--yolk-soft);color:var(--ink)}
+.p-sf{background:var(--grey-soft);color:var(--muted)} .p-cam{background:var(--bad-soft);color:var(--bad)}
+.p-zona{background:var(--grey-soft);color:var(--ink);font-weight:600}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--muted);min-width:0}
+.meta b{color:var(--ink);font-variant-numeric:tabular-nums}
+.res{font-size:14px;min-width:0}
+.alerts{grid-column:2;display:flex;flex-wrap:wrap;gap:6px}
+.al{font-size:12px;background:var(--warn-soft);color:var(--warn);padding:2px 8px;border-radius:6px}
+.mot{font-size:13px;background:var(--bad-soft);color:var(--bad);padding:4px 8px;border-radius:6px}
+.actions{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-top:1px dashed var(--line);padding-top:10px;margin-top:6px}
+.btn{font:inherit;font-size:14px;font-weight:600;text-decoration:none;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.btn.cv{background:var(--yolk);border-color:var(--yolk);color:var(--ink-on-yolk)}
+.tel{font-variant-numeric:tabular-nums;user-select:all;font-size:14px}
+.estado{font:inherit;font-size:14px;font-weight:600;border-radius:8px;padding:6px 8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.estado[data-v="llamar"]{background:var(--yolk-soft)} .estado[data-v="entrevista"]{background:var(--ok-soft);color:var(--ok)}
+.estado[data-v="contratado"]{background:var(--ok);color:var(--card)} .estado[data-v="descartado"]{background:var(--bad-soft);color:var(--bad)}
+.nota{font:inherit;font-size:14px;flex:1 1 180px;min-width:0;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--card);color:var(--ink)}
+details.more{grid-column:1 / -1}
+details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--link)}
+.jobs{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.jobs th{text-align:left;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line);padding:4px 6px}
+.jobs td{border-bottom:1px solid var(--line);padding:5px 6px;vertical-align:top}
+.jobs td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tw{overflow-x:auto}
+.tag{font-size:11px;font-weight:700;border-radius:4px;padding:0 5px;margin-right:3px;background:var(--grey-soft)}
+.pts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px;margin-top:10px;font-size:13px}
+.pts div{background:var(--paper);border-radius:6px;padding:6px 8px}
+.pts b{font-variant-numeric:tabular-nums}
+.guide{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:4px 14px;margin-block:8px}
+.guide summary{cursor:pointer;font-family:var(--display);font-size:20px;font-weight:700;text-transform:uppercase;padding-block:8px}
+.guide p,.guide li{font-size:14px;max-width:75ch}
+.empty{color:var(--muted);padding:24px 0}
+.sync{font-size:12px;color:var(--muted)}
+.visor{position:fixed;inset:0;z-index:20;background:var(--paper);display:flex;flex-direction:column}
+.visor .vbar{display:flex;gap:8px;align-items:center;justify-content:space-between;background:var(--ink);color:var(--paper);padding-top:calc(10px + env(safe-area-inset-top,0px));padding-bottom:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.visor .vbar b{font-family:var(--display);font-size:20px;text-transform:uppercase;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.visor .vbody{flex:1;overflow:auto;padding:12px max(12px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;align-items:center;gap:12px}
+.visor canvas,.visor img{max-width:100%;height:auto;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.visor .vmsg{color:var(--muted);padding:30px 0;text-align:center}
+.vbtn{font:inherit;font-weight:700;background:var(--yolk);color:var(--ink-on-yolk);border:0;border-radius:8px;padding:6px 12px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.vbtn.alt{background:transparent;color:var(--paper);border:1px solid #6B6556}
+@media (max-width:520px){.card{grid-template-columns:1fr}.score{grid-row:auto;flex-direction:row;justify-content:flex-start;gap:10px}.alerts{grid-column:1}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header class="top"><div class="wrap">
+  <div><h1>Selección <span>Octubre 2026</span></h1>
+  <div class="sub" id="sub">Búsqueda Cocinera/o y Vendedor/a · La Presumida</div></div>
+  <div class="sub sync" id="sync">Los estados se guardan para todos los que abren este tablero.</div>
+</div></header>
+
+<nav class="tabs" aria-label="Listas"><div class="wrap" role="tablist" id="tabs"></div></nav>
+
+<main class="wrap">
+  <p class="intro" id="intro"></p>
+  <div class="filters">
+    <label class="sr" for="q" hidden>Buscar</label>
+    <input id="q" type="search" placeholder="Buscar nombre, empresa o barrio" autocomplete="off">
+    <select id="fPart" aria-label="Partido"><option value="">Todos los partidos</option></select>
+    <select id="fGrupo" aria-label="Permanencia"><option value="">Toda permanencia</option></select>
+    <select id="fEstado" aria-label="Estado"><option value="">Todos los estados</option></select>
+  </div>
+  <div class="count" id="count"></div>
+  <div class="list" id="list"></div>
+
+  <details class="guide" id="como">
+    <summary>Cómo se calculó</summary>
+    <ul>
+      <li><b>De dónde salen los datos:</b> de cada CV que llegó a lapresumidapastas@gmail.com desde el 23/10 hasta la fecha de corte que figura arriba. Los CVs nuevos se suman en cada actualización. Nombre, teléfono, mail y barrio, copiados del CV. El puesto sale del asunto del mail; si no lo dice, se deduce y se marca "deducido".</li>
+      <li><b>Meses en cada trabajo:</b> del mes que empezó al que terminó, contando los dos (03/2021 a 02/2023 = 24). "Actualidad" = octubre 2026. Si el CV pone solo el año, se toma julio de ese año.</li>
+      <li><b>Promedio por trabajo:</b> suma de meses de los trabajos con fecha ÷ cantidad de esos trabajos. Los que no tienen fecha no entran.</li>
+      <li><b>Permanencia:</b> Estable = promedio de 2 años o más. Cambia seguido = promedio menor a 1 año y 2 o más trabajos de menos de 1 año. Sin fechas = ningún trabajo tiene fechas. El resto, Intermedio.</li>
+      <li><b>Requisitos del aviso:</b> vivir en Vicente López, San Isidro o San Martín; disponibilidad full time; cocina con experiencia en cocina o gastronomía; atención con al menos un trabajo (para poder dar referencias). Si el CV no dice zona o disponibilidad, no se descarta: queda con alerta.</li>
+      <li><b>Puntaje (0 a 100):</b> Permanencia hasta 35 · Experiencia hasta 30 · Cercanía hasta 20 · Aviso hasta 15. Tocá "Ver trabajos y puntaje" en cada ficha para ver el detalle.</li>
+      <li><b>No se usó:</b> edad, sexo, estado civil, hijos, nacionalidad ni foto.</li>
+      <li><b>Ojo:</b> los datos los leyó Claude de cada CV. Antes de llamar, abrí el CV con el botón.</li>
+    </ul>
+  </details>
+</main>
+
+<script id="datos" type="application/json">/*DATA*/</script>
+<script>
+(function(){
+  const D = JSON.parse(document.getElementById('datos').textContent);
+  const TABS = [
+    ['atencion','Atención','Cumplen el aviso y no cambian de trabajo seguido. Primero los estables (2 años o más), después los intermedios y al final los que no tienen fechas; dentro de cada grupo, de mayor a menor puntaje.'],
+    ['cocina','Cocina','Igual que Atención, para la búsqueda de cocinera/o.'],
+    ['cambian','Cambian seguido','Cumplen el aviso, pero en promedio duran menos de 1 año y tuvieron 2 o más trabajos cortos.'],
+    ['revisar','Revisar a mano','No se pudo leer el CV (mandaron un link de Drive, el mail no traía adjunto o el archivo no se abrió). Abrilos con el botón.'],
+    ['nocumplen','No cumplen','No cumplen algún requisito del aviso. El motivo está en rojo en cada ficha.']
+  ];
+  const ESTADOS = [['','Sin ver'],['llamar','Llamar'],['entrevista','Entrevista'],['contratado','Contratado'],['descartado','Descartado']];
+  const GRUPO_CLS = g => g.startsWith('1.') ? 'p-est' : g.startsWith('2.') ? 'p-int' : g.startsWith('Sin fechas') ? 'p-sf' : g==='Cambia seguido' ? 'p-cam' : 'p-sf';
+  const GRUPO_TXT = g => g.replace(/^\d\.\s*/,'');
+  const $ = s => document.querySelector(s);
+  let tab = 'atencion';
+  try { const h = location.hash.slice(1); if (TABS.some(t=>t[0]===h)) tab = h; } catch(e){}
+  const estados = {}; // id -> {estado, nota}
+  let db = null;
+
+  const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+
+  function fillSelects(){
+    const parts = [...new Set(D.cands.map(c=>c.part||'sin dato'))].sort();
+    parts.forEach(p => $('#fPart').append(new Option(p, p)));
+    ['1. Estable (2 años o más)','2. Intermedio','Sin fechas, revisar','Cambia seguido','CV sin leer','Sin experiencia'].forEach(g => $('#fGrupo').append(new Option(GRUPO_TXT(g), g)));
+    ESTADOS.forEach(([v,t]) => $('#fEstado').append(new Option(t, v || 'sinver')));
+  }
+
+  function renderTabs(){
+    const box = $('#tabs'); box.textContent = '';
+    TABS.forEach(([id, label]) => {
+      const b = el('button','tab'); b.setAttribute('role','tab'); b.setAttribute('aria-selected', String(id===tab));
+      b.append(document.createTextNode(label)); b.append(el('span','c', String(D.cands.filter(c=>c.lista===id).length)));
+      b.onclick = () => { tab = id; try{ history.replaceState(null,'','#'+id) }catch(e){} renderTabs(); render(); };
+      box.append(b);
+    });
+    $('#intro').textContent = TABS.find(t=>t[0]===tab)[2];
+  }
+
+  function saveEstado(id, patch){
+    estados[id] = Object.assign({estado:'', nota:''}, estados[id], patch);
+    if (!db) return;
+    db.doc('estados/'+id).set(Object.assign({}, estados[id], {at: new Date().toISOString()})).catch(err => {
+      $('#sync').textContent = 'No se pudo guardar el estado (' + (err && err.code || 'error') + '). Queda solo en esta pantalla.';
+    });
+  }
+
+  function card(c){
+    const k = el('article','card');
+    const sc = el('div','score');
+    sc.append(el('span','pos','#'+c.pos));
+    const b = el('b', null, String(c.tot)); sc.append(b);
+    const bar = el('div','bar'); const i = el('i'); i.style.width = Math.max(0,Math.min(100,c.tot))+'%'; bar.append(i); sc.append(bar);
+    sc.append(el('small', null, 'de 100'));
+    k.append(sc);
+
+    const head = el('div','head');
+    head.append(el('span','name', c.n));
+    head.append(el('span','pill '+GRUPO_CLS(c.grupo), GRUPO_TXT(c.grupo)));
+    head.append(el('span','pill p-zona', (c.loc ? c.loc + ' · ' : '') + (c.part || 'zona sin dato')));
+    k.append(head);
+
+    const meta = el('div','meta');
+    const m = (lab, val) => { const s = el('span'); s.append(document.createTextNode(lab+' ')); s.append(el('b',null,val)); meta.append(s); };
+    m('Puesto:', c.puesto + (c.ded ? ' (deducido)' : ''));
+    m('Promedio:', c.prom == null ? 'sin fechas' : c.prom + ' meses/trabajo');
+    m('Trabajos < 1 año:', String(c.cortos));
+    m('Más largo:', c.largo == null ? '—' : c.largo + ' meses');
+    m('Full time:', c.ft || 'no dice');
+    k.append(meta);
+
+    k.append(el('div','res', c.res));
+    if (c.mot.length || c.al.length || c.veces > 1){
+      const a = el('div','alerts');
+      c.mot.forEach(t => a.append(el('span','mot', t)));
+      c.al.forEach(t => a.append(el('span','al', t)));
+      if (c.veces > 1) a.append(el('span','al', 'Mandó el CV ' + c.veces + ' veces'));
+      k.append(a);
+    }
+
+    const act = el('div','actions');
+    if (c.cv){ const cv = el('button','btn cv','Abrir CV'); cv.type='button'; cv.onclick = () => abrirCV(c); act.append(cv); }
+    const ml = el('a','btn', c.cv ? 'Ver mail' : 'Abrir mail (CV adjunto)'); ml.href = c.link; ml.target = '_blank'; ml.rel = 'noopener'; act.append(ml);
+    if (c.wa){ const w = el('a','btn','WhatsApp'); w.href = 'https://wa.me/'+c.wa; w.target='_blank'; w.rel='noopener'; act.append(w); }
+    if (c.tel) act.append(el('span','tel', c.tel));
+    const sel = el('select','estado'); sel.id = 'est-'+c.id; sel.setAttribute('aria-label','Estado de '+c.n);
+    ESTADOS.forEach(([v,t]) => sel.append(new Option(t, v)));
+    const st = estados[c.id] || {}; sel.value = st.estado || ''; sel.dataset.v = sel.value;
+    sel.onchange = () => { sel.dataset.v = sel.value; saveEstado(c.id, {estado: sel.value}); if ($('#fEstado').value) render(); };
+    act.append(sel);
+    const nota = el('input','nota'); nota.id = 'nota-'+c.id; nota.placeholder = 'Nota (ej: llamar a la tarde)'; nota.value = st.nota || '';
+    nota.onchange = () => saveEstado(c.id, {nota: nota.value.trim()});
+    act.append(nota);
+    k.append(act);
+
+    const det = el('details','more'); det.append(el('summary', null, 'Ver trabajos y puntaje'));
+    det.addEventListener('toggle', () => { if (det.open && !det.dataset.done){ det.dataset.done = 1; det.append(detalle(c)); } });
+    k.append(det);
+    return k;
+  }
+
+  let pdfLib = null;
+  function cargarScript(src){ return new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = src; sc.onload = ok; sc.onerror = no; document.head.append(sc); }); }
+  async function pdfjs(){
+    if (pdfLib) return pdfLib;
+    const base = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+    await cargarScript(base + 'pdf.min.js');
+    await cargarScript(base + 'pdf.worker.min.js'); // corre sin worker aparte
+    pdfLib = window.pdfjsLib; return pdfLib;
+  }
+  function cerrarVisor(){ const v = document.getElementById('visor'); if (v) v.remove(); document.body.style.overflow = ''; }
+  async function abrirCV(c){
+    cerrarVisor();
+    const v = el('div','visor'); v.id = 'visor'; v.setAttribute('role','dialog'); v.setAttribute('aria-label','CV de '+c.n);
+    const bar = el('div','vbar'); bar.append(el('b', null, c.n));
+    const right = el('div'); right.style.display='flex'; right.style.gap='8px';
+    const ml = el('a','vbtn alt','Mail'); ml.href = c.link; ml.target='_blank'; ml.rel='noopener'; right.append(ml);
+    const x = el('button','vbtn','Cerrar'); x.type='button'; x.onclick = cerrarVisor; right.append(x);
+    bar.append(right); v.append(bar);
+    const body = el('div','vbody'); v.append(body);
+    document.body.append(v); document.body.style.overflow = 'hidden'; x.focus();
+    if (/\.(jpg|png|webp)$/i.test(c.cv)){ const im = el('img'); im.alt = 'CV de '+c.n; im.src = c.cv; body.append(im); return; }
+    const msg = el('p','vmsg','Cargando el CV…'); body.append(msg);
+    try {
+      const lib = await pdfjs();
+      const buf = await (await fetch(c.cv)).arrayBuffer();
+      const doc = await lib.getDocument({data: buf}).promise;
+      msg.remove();
+      const ancho = Math.min(body.clientWidth - 24, 900);
+      for (let i = 1; i <= Math.min(doc.numPages, 8); i++){
+        if (!document.getElementById('visor')) return;
+        const page = await doc.getPage(i);
+        const vp1 = page.getViewport({scale: 1}); const esc = ancho / vp1.width; const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const vp = page.getViewport({scale: esc * dpr});
+        const cv = document.createElement('canvas'); cv.width = vp.width; cv.height = vp.height; cv.style.width = Math.floor(vp.width / dpr) + 'px';
+        body.append(cv);
+        await page.render({canvasContext: cv.getContext('2d'), viewport: vp}).promise;
+      }
+    } catch (e) {
+      msg.textContent = 'No se pudo mostrar el CV acá. Probá con el botón "Mail" de arriba.';
+    }
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarVisor(); });
+
+  function detalle(c){
+    const box = el('div');
+    if (c.ts.length){
+      const tw = el('div','tw'); const t = el('table','jobs');
+      const hr = el('tr'); ['Empresa','Puesto','Fechas en el CV','Meses'].forEach(h => hr.append(el('th',null,h))); t.append(hr);
+      c.ts.forEach(j => {
+        const tr = el('tr');
+        const td1 = el('td'); td1.append(el('div',null,j.e || '?'));
+        const tags = el('div'); if (j.g) tags.append(el('span','tag','gastronomía')); if (j.a) tags.append(el('span','tag','atención')); if (j.k) tags.append(el('span','tag','cocina')); td1.append(tags);
+        tr.append(td1); tr.append(el('td',null,j.c || j.r)); tr.append(el('td',null,j.f + (j.ap ? ' (año solo: aprox.)' : '')));
+        tr.append(el('td','n', j.m == null ? 'sin fechas' : String(j.m)));
+        t.append(tr);
+      });
+      tw.append(t); box.append(tw);
+    } else box.append(el('p',null,'El CV no tiene trabajos cargados.'));
+    const p = el('div','pts');
+    const permTxt = c.prom == null ? (c.ts.length ? 'sin fechas: 10 fijos' : 'sin experiencia') : ('promedio ' + c.prom + ' meses, ' + c.cortos + ' trabajo(s) < 1 año');
+    const ftTxt = (c.ft||'').startsWith('si') ? 'full time: sí' : (c.ft||'').startsWith('no dice') || !c.ft ? 'full time: no dice' : 'full time: no';
+    [['Permanencia', c.pp, 35, permTxt], ['Experiencia', c.pe, 30, c.ext], ['Cercanía', c.pz, 20, c.part || 'zona sin dato'], ['Aviso', c.pa, 15, ftTxt + '; referencias: ' + (c.ref || 'no menciona')]]
+      .forEach(([n,v,mx,why]) => { const d = el('div'); d.append(el('b',null, n+': '+v+'/'+mx)); d.append(el('div',null,why)); p.append(d); });
+    box.append(p);
+    const f = el('p','sync', 'Archivo: ' + (c.arch || '—') + ' · Mail del ' + c.fecha + (c.mail ? ' · ' + c.mail : ''));
+    box.append(f);
+    return box;
+  }
+
+  function render(){
+    const q = $('#q').value.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+    const fp = $('#fPart').value, fg = $('#fGrupo').value, fe = $('#fEstado').value;
+    const rows = D.cands.filter(c => c.lista === tab).filter(c => {
+      if (fp && (c.part || 'sin dato') !== fp) return false;
+      if (fg && c.grupo !== fg) return false;
+      if (fe){ const e = (estados[c.id]||{}).estado || ''; if ((e || 'sinver') !== fe) return false; }
+      if (q){
+        const hay = (c.n+' '+c.loc+' '+c.part+' '+c.res+' '+c.ts.map(j=>j.e+' '+j.c).join(' ')).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    const list = $('#list'); list.textContent = '';
+    $('#count').textContent = rows.length + ' candidato' + (rows.length===1?'':'s') + ' en esta lista';
+    if (!rows.length){ list.append(el('p','empty','No hay candidatos con estos filtros.')); return; }
+    const frag = document.createDocumentFragment(); rows.forEach(c => frag.append(card(c))); list.append(frag);
+  }
+
+  $('#sub').textContent = 'CVs recibidos hasta el ' + (D.corte || D.generado) + ' · ' + D.mails + ' mails · ' + D.personas + ' personas';
+  fillSelects(); renderTabs(); render();
+  ['#q','#fPart','#fGrupo','#fEstado'].forEach(s => $(s).addEventListener('input', render));
+
+  // Estados compartidos (Llamar / Entrevista / ...) guardados en el tablero
+  (async () => {
+    try {
+      if (!window.claude || !window.claude.use) { $('#sync').textContent = 'Los estados se ven solo en esta pantalla.'; return; }
+      db = await window.claude.use('db');
+      if (!db){ $('#sync').textContent = 'Iniciá sesión para guardar los estados.'; return; }
+      db.collection('estados').onSnapshot(snap => {
+        const docs = snap.docs || snap;
+        (docs || []).forEach(d => {
+          const id = d.id || (d.ref && d.ref.id); const v = typeof d.data === 'function' ? d.data() : d.data;
+          if (id && v) estados[id] = {estado: v.estado || '', nota: v.nota || ''};
+        });
+        // actualizar controles visibles sin perder lo que se está escribiendo
+        Object.keys(estados).forEach(id => {
+          const s = document.getElementById('est-'+id); if (s && s !== document.activeElement){ s.value = estados[id].estado; s.dataset.v = s.value; }
+          const n = document.getElementById('nota-'+id); if (n && n !== document.activeElement) n.value = estados[id].nota;
+        });
+        $('#sync').textContent = 'Los estados y notas se guardan para todos los que abren este tablero.';
+      });
+    } catch (e) { $('#sync').textContent = 'Los estados se ven solo en esta pantalla.'; }
+  })();
+})();
+</script>
