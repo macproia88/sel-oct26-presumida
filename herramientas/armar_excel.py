@@ -263,6 +263,9 @@ COLS = ['Pos.', 'Puntaje (0-100)', 'Permanencia', 'Nombre', 'Teléfono', 'Mail',
 WID = [6, 10, 20, 24, 15, 28, 10, 18, 15, 16, 60, 9, 11, 11, 11, 22, 10, 45, 30, 11, 11, 11, 11, 34, 14, 34, 11, 10, 19]
 
 
+GRUPO_TXT_X = lambda g: re.sub(r'^\d\.\s*', '', g)
+
+
 def hoja_candidatos(nombre, lista, con_puntaje=True, extra_motivo=False):
     ws = wb.create_sheet(nombre)
     cols = (['Motivo'] if extra_motivo else []) + COLS
@@ -326,6 +329,26 @@ for r in cands:
     r['pts_perm'] = py_pts_perm(r)
     r['total'] = r['pts_perm'] + r['pts_exp'] + r['pts_zona'] + r['pts_aviso']
 
+
+# ---------- experiencia como encargado/a ----------
+_ENC_SI = re.compile(r"\b(sub ?)?encargad[oa]s?\b(?!\s+de\s+(limpieza|edificio|cartel|repuesto|traslado|e-?commerce|publicidad|maestranza|mantenimiento|deposito|stock|redes))"
+                     r"|\bjef[ea] de (cocina|salon|barra|produccion|camareros|plaza|turno|local|sucursal|partida)"
+                     r"|\bgerente( de turno| de local| de sucursal)?\b(?! de (contabilidad|sistemas|marketing))"
+                     r"|\bsupervis(or|ora)\b(?! de contabilidad)"
+                     r"|\bresponsable (de|del) (turno|local|sucursal|salon|tienda|cocina|equipo)"
+                     r"|\blider de (experiencia|sector|equipo|turno)|\bsegundo a cargo")
+_ENC_NO = re.compile(r"project manager|social media|community manager|contabilidad|remiser|jefa? de catedra|jefa? de compras")
+def cargos_encargado(ts):
+    out = []
+    for t in ts:
+        txt = norm(t['cargo'])
+        if _ENC_NO.search(txt) and not re.search(r"cocina|local|turno|salon", txt): continue
+        if _ENC_SI.search(txt):
+            m = meses(t)
+            out.append(f"{t['cargo']} en {t['empresa'] or '?'}" + (f" ({m} meses)" if m else ""))
+    return out
+for r in cands: r['enc'] = cargos_encargado(r['trabajos_n'])
+
 ORDEN = {'1. Estable (2 años o más)': 0, '2. Intermedio': 1, 'Sin fechas, revisar': 2}
 cumplen = [r for r in cands if not r['motivos'] and r['grupo'] in ORDEN]
 sinleer = sorted([r for r in cands if not r['motivos'] and r['grupo'] == 'CV sin leer'], key=lambda r: r.get('nombre') or '')
@@ -371,6 +394,7 @@ rows = [
     ('   de esos, sin fechas, revisar', sum(1 for r in rank_at + rank_co if r['grupo'].startswith('Sin fechas')), 'El CV no tiene fechas: no se puede medir permanencia. Van al final, en gris.'),
     ('Cambian seguido', len(cambian), 'Cumplen el aviso, pero en promedio duran menos de 1 año y tuvieron 2 o más trabajos cortos.'),
     ('No cumplen', len(nocumplen), 'Con el motivo en la primera columna.'),
+    ('Encargados', sum(1 for r in cands if r['enc']), 'Personas que ya trabajaron como encargado/a, jefe/a o supervisor/a. Pestaña Encargados (agrupados por lista).'),
     ('Revisar a mano', len(sinleer), 'No se pudo leer el CV: mandaron un link de Drive, el mail no traía adjunto o el archivo es ilegible. Cumplen la zona o no se sabe; abrilos con el link.'),
     ('', None, None),
     ('DE DÓNDE SALE CADA DATO', None, None),
@@ -409,6 +433,19 @@ for i in range(1, len(rows) + 1):
     if wsr.cell(row=i, column=1).value in ('NÚMEROS', 'DE DÓNDE SALE CADA DATO', 'CÓMO SE CALCULÓ', 'REQUISITOS DEL AVISO (filtro)', 'PUNTAJE (0 a 100)'):
         for c in (1, 2, 3): wsr.cell(row=i, column=c).fill = AMARILLO
 
+wse = wb.create_sheet('Encargados')
+encabezado(wse, ['Lista', 'Pos.', 'Puntaje', 'Nombre', 'Teléfono', 'Partido', 'Puesto', 'Permanencia', 'Experiencia como encargado/a', 'Abrir CV', 'ID candidato'], [16, 6, 9, 26, 15, 15, 16, 20, 70, 10, 19])
+wse.freeze_panes = 'E2'
+fe = 2
+for nombre_l, rs in (('Atención', rank_at), ('Cocina', rank_co), ('Cambian seguido', cambian), ('Revisar a mano', sinleer), ('No cumplen', nocumplen)):
+    for pos, r in enumerate(rs, 1):
+        if not r['enc']: continue
+        vals = [nombre_l, pos, r['total'], r.get('nombre'), r.get('telefono'), r['partido_n'] or 'sin dato', r['puesto_eval'], GRUPO_TXT_X(r['grupo']), ' ; '.join(r['enc']), 'Abrir CV', r['id']]
+        for c, v in enumerate(vals, 1):
+            cell = wse.cell(row=fe, column=c, value=v); cell.font = BODY; cell.alignment = WRAP; cell.border = BORDE
+        wse.cell(row=fe, column=10).hyperlink = r['link']; wse.cell(row=fe, column=10).font = LINK
+        fe += 1
+wse.cell(row=fe + 1, column=1, value='Se marca "encargado/a" cuando algún puesto del CV dice encargado/a (de local, turno, salón, caja, cocina…), subencargado/a, jefe/a de cocina o salón, gerente de turno, supervisor/a, responsable de turno o local, o líder de equipo. No cuenta "encargada de limpieza", "de edificio" y similares, que no son a cargo de un local o equipo.').font = Font(name=F, size=9, italic=True)
 wb.move_sheet('Detalle trabajos', offset=len(wb.sheetnames))
 wb.save(OUT)
 json.dump({'regs': len(regs), 'cands': len(cands), 'at': len(rank_at), 'co': len(rank_co), 'cambian': len(cambian),
@@ -441,7 +478,7 @@ def bloque(r, lista):
             'cortos': r['cortos'], 'largo': r['largo'], 'disp': r.get('disponibilidad') or '', 'ft': r.get('full_time') or '',
             'res': r.get('resumen') or '', 'al': r['alertas'], 'mot': r['motivos'], 'pp': r['pts_perm'], 'pe': r['pts_exp'],
             'pz': r['pts_zona'], 'pa': r['pts_aviso'], 'tot': r['total'], 'ext': r['exp_txt'], 'ref': r.get('referencias') or '',
-            'arch': r.get('archivo') or '', 'link': r['link'], 'fecha': r.get('fecha_mail') or '', 'veces': r['veces'], 'ts': ts, 'mids': [r['message_id']] + r['otros_mails']}
+            'arch': r.get('archivo') or '', 'link': r['link'], 'fecha': r.get('fecha_mail') or '', 'veces': r['veces'], 'ts': ts, 'enc': r['enc'], 'mids': [r['message_id']] + r['otros_mails']}
 
 tab = []
 for lista, rs in (('atencion', rank_at), ('cocina', rank_co), ('cambian', cambian), ('nocumplen', nocumplen), ('revisar', sinleer)):

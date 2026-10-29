@@ -57,6 +57,8 @@ nav.tabs .wrap{display:flex;gap:6px;overflow-x:auto;padding-block:10px;scrollbar
 .p-est{background:var(--ok-soft);color:var(--ok)} .p-int{background:var(--yolk-soft);color:var(--ink)}
 .p-sf{background:var(--grey-soft);color:var(--muted)} .p-cam{background:var(--bad-soft);color:var(--bad)}
 .p-zona{background:var(--grey-soft);color:var(--ink);font-weight:600}
+.p-enc{background:var(--ink);color:var(--yolk)}
+.encbox{font-size:13px;background:var(--yolk-soft);border-radius:6px;padding:6px 8px;margin-top:8px}
 .meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--muted);min-width:0}
 .meta b{color:var(--ink);font-variant-numeric:tabular-nums}
 .res{font-size:14px;min-width:0}
@@ -130,6 +132,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
     <select id="fPart" aria-label="Partido"><option value="">Todos los partidos</option></select>
     <select id="fGrupo" aria-label="Permanencia"><option value="">Toda permanencia</option></select>
     <select id="fEstado" aria-label="Estado"><option value="">Todos los estados</option></select>
+    <select id="fEnc" aria-label="Encargados"><option value="">Todos</option><option value="si">Solo los que fueron encargados</option></select>
   </div>
   <div class="count" id="count"></div>
   <div class="list" id="list"></div>
@@ -143,6 +146,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
       <li><b>Permanencia:</b> Estable = promedio de 2 años o más. Cambia seguido = promedio menor a 1 año y 2 o más trabajos de menos de 1 año. Sin fechas = ningún trabajo tiene fechas. El resto, Intermedio.</li>
       <li><b>Requisitos del aviso:</b> vivir en Vicente López, San Isidro o San Martín; disponibilidad full time; cocina con experiencia en cocina o gastronomía; atención con al menos un trabajo (para poder dar referencias). Si el CV no dice zona o disponibilidad, no se descarta: queda con alerta.</li>
       <li><b>Puntaje (0 a 100):</b> Permanencia hasta 35 · Experiencia hasta 30 · Cercanía hasta 20 · Aviso hasta 15. Tocá "Ver trabajos y puntaje" en cada ficha para ver el detalle.</li>
+      <li><b>Fue encargado/a:</b> algún puesto del CV dice encargado/a (de local, turno, salón, caja, cocina…), subencargado/a, jefe/a de cocina o salón, gerente de turno, supervisor/a, responsable de turno o local, o líder de equipo. No cuenta "encargada de limpieza" o "de edificio". No suma puntaje: es un filtro para encontrarlos rápido.</li>
       <li><b>No se usó:</b> edad, sexo, estado civil, hijos, nacionalidad ni foto.</li>
       <li><b>Ojo:</b> los datos los leyó Claude de cada CV. Antes de llamar, abrí el CV con el botón.</li>
     </ul>
@@ -251,6 +255,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
     head.append(el('span','name', c.n));
     head.append(el('span','pill '+GRUPO_CLS(c.grupo), GRUPO_TXT(c.grupo)));
     head.append(el('span','pill p-zona', (c.loc ? c.loc + ' · ' : '') + (c.part || 'zona sin dato')));
+    if (c.enc && c.enc.length) head.append(el('span','pill p-enc', 'Fue encargado/a'));
     k.append(head);
 
     const meta = el('div','meta');
@@ -351,6 +356,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
       tw.append(t); box.append(tw);
     } else box.append(el('p',null,'El CV no tiene trabajos cargados.'));
     const p = el('div','pts');
+    if (c.enc && c.enc.length) box.append(el('div','encbox', 'Como encargado/a: ' + c.enc.join(' · ')));
     const permTxt = c.prom == null ? (c.ts.length ? 'sin fechas: 10 fijos' : 'sin experiencia') : ('promedio ' + c.prom + ' meses, ' + c.cortos + ' trabajo(s) < 1 año');
     const ftTxt = (c.ft||'').startsWith('si') ? 'full time: sí' : (c.ft||'').startsWith('no dice') || !c.ft ? 'full time: no dice' : 'full time: no';
     [['Permanencia', c.pp, 35, permTxt], ['Experiencia', c.pe, 30, c.ext], ['Cercanía', c.pz, 20, c.part || 'zona sin dato'], ['Aviso', c.pa, 15, ftTxt + '; referencias: ' + (c.ref || 'no menciona')]]
@@ -363,10 +369,11 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
 
   function render(){
     const q = $('#q').value.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
-    const fp = $('#fPart').value, fg = $('#fGrupo').value, fe = $('#fEstado').value;
+    const fp = $('#fPart').value, fg = $('#fGrupo').value, fe = $('#fEstado').value, fen = $('#fEnc').value;
     const rows = D.cands.filter(c => c.lista === tab).filter(c => {
       if (fp && (c.part || 'sin dato') !== fp) return false;
       if (fg && c.grupo !== fg) return false;
+      if (fen === 'si' && !(c.enc && c.enc.length)) return false;
       if (fe){ const e = (estados[c.id]||{}).estado || ''; if ((e || 'sinver') !== fe) return false; }
       if (q){
         const hay = (c.n+' '+c.loc+' '+c.part+' '+c.res+' '+c.ts.map(j=>j.e+' '+j.c).join(' ')).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
@@ -382,7 +389,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
 
   $('#sub').textContent = 'CVs recibidos hasta el ' + (D.corte || D.generado) + ' · ' + D.mails + ' mails · ' + D.personas + ' personas';
   fillSelects(); renderTabs(); render();
-  ['#q','#fPart','#fGrupo','#fEstado'].forEach(s => $(s).addEventListener('input', render));
+  ['#q','#fPart','#fGrupo','#fEstado','#fEnc'].forEach(s => $(s).addEventListener('input', render));
 
   // Estados compartidos (Llamar / Entrevista / ...) guardados en el tablero
   (async () => {
