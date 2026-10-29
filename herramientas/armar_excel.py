@@ -395,6 +395,7 @@ rows = [
     ('Cambian seguido', len(cambian), 'Cumplen el aviso, pero en promedio duran menos de 1 año y tuvieron 2 o más trabajos cortos.'),
     ('No cumplen', len(nocumplen), 'Con el motivo en la primera columna.'),
     ('Encargados', sum(1 for r in cands if r['enc']), 'Personas que ya trabajaron como encargado/a, jefe/a o supervisor/a. Pestaña Encargados (agrupados por lista).'),
+    ('Encargados estables', sum(1 for r in cands if r['enc'] and r['grupo'].startswith('1.') and not r['motivos']), 'Fueron encargado/a y duran 2 años o más en promedio, y cumplen el aviso. Pestaña Encargados estables.'),
     ('Revisar a mano', len(sinleer), 'No se pudo leer el CV: mandaron un link de Drive, el mail no traía adjunto o el archivo es ilegible. Cumplen la zona o no se sabe; abrilos con el link.'),
     ('', None, None),
     ('DE DÓNDE SALE CADA DATO', None, None),
@@ -446,6 +447,19 @@ for nombre_l, rs in (('Atención', rank_at), ('Cocina', rank_co), ('Cambian segu
         wse.cell(row=fe, column=10).hyperlink = r['link']; wse.cell(row=fe, column=10).font = LINK
         fe += 1
 wse.cell(row=fe + 1, column=1, value='Se marca "encargado/a" cuando algún puesto del CV dice encargado/a (de local, turno, salón, caja, cocina…), subencargado/a, jefe/a de cocina o salón, gerente de turno, supervisor/a, responsable de turno o local, o líder de equipo. No cuenta "encargada de limpieza", "de edificio" y similares, que no son a cargo de un local o equipo.').font = Font(name=F, size=9, italic=True)
+wsx = wb.create_sheet('Encargados estables')
+encabezado(wsx, ['Lista', 'Pos.', 'Puntaje', 'Nombre', 'Teléfono', 'Partido', 'Puesto', 'Permanencia', 'Experiencia como encargado/a', 'Abrir CV', 'ID candidato'], [16, 6, 9, 26, 15, 15, 16, 20, 70, 10, 19])
+wsx.freeze_panes = 'E2'
+fe = 2
+for nombre_l, rs in (('Atención', rank_at), ('Cocina', rank_co), ('No cumplen', nocumplen)):
+    for pos, r in enumerate(rs, 1):
+        if not r['enc'] or not r['grupo'].startswith('1.'): continue
+        vals = [nombre_l, pos, r['total'], r.get('nombre'), r.get('telefono'), r['partido_n'] or 'sin dato', r['puesto_eval'], GRUPO_TXT_X(r['grupo']), ' ; '.join(r['enc']), 'Abrir CV', r['id']]
+        for c, v in enumerate(vals, 1):
+            cell = wsx.cell(row=fe, column=c, value=v); cell.font = BODY; cell.alignment = WRAP; cell.border = BORDE
+        wsx.cell(row=fe, column=10).hyperlink = r['link']; wsx.cell(row=fe, column=10).font = LINK
+        fe += 1
+wsx.cell(row=fe + 1, column=1, value='Se marca "encargado/a" cuando algún puesto del CV dice encargado/a (de local, turno, salón, caja, cocina…), subencargado/a, jefe/a de cocina o salón, gerente de turno, supervisor/a, responsable de turno o local, o líder de equipo. Estables = en promedio duraron 2 años o más en sus trabajos (columna Permanencia).').font = Font(name=F, size=9, italic=True)
 wb.move_sheet('Detalle trabajos', offset=len(wb.sheetnames))
 wb.save(OUT)
 json.dump({'regs': len(regs), 'cands': len(cands), 'at': len(rank_at), 'co': len(rank_co), 'cambian': len(cambian),

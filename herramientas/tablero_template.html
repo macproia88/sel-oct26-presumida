@@ -117,7 +117,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
     <select id="fPart" aria-label="Partido"><option value="">Todos los partidos</option></select>
     <select id="fGrupo" aria-label="Permanencia"><option value="">Toda permanencia</option></select>
     <select id="fEstado" aria-label="Estado"><option value="">Todos los estados</option></select>
-    <select id="fEnc" aria-label="Encargados"><option value="">Todos</option><option value="si">Solo los que fueron encargados</option></select>
+    <select id="fEnc" aria-label="Encargados"><option value="">Todos</option><option value="si">Solo los que fueron encargados</option><option value="estable">Encargados estables (2 años o más)</option></select>
   </div>
   <div class="count" id="count"></div>
   <div class="list" id="list"></div>
@@ -131,7 +131,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
       <li><b>Permanencia:</b> Estable = promedio de 2 años o más. Cambia seguido = promedio menor a 1 año y 2 o más trabajos de menos de 1 año. Sin fechas = ningún trabajo tiene fechas. El resto, Intermedio.</li>
       <li><b>Requisitos del aviso:</b> vivir en Vicente López, San Isidro o San Martín; disponibilidad full time; cocina con experiencia en cocina o gastronomía; atención con al menos un trabajo (para poder dar referencias). Si el CV no dice zona o disponibilidad, no se descarta: queda con alerta.</li>
       <li><b>Puntaje (0 a 100):</b> Permanencia hasta 35 · Experiencia hasta 30 · Cercanía hasta 20 · Aviso hasta 15. Tocá "Ver trabajos y puntaje" en cada ficha para ver el detalle.</li>
-      <li><b>Fue encargado/a:</b> algún puesto del CV dice encargado/a (de local, turno, salón, caja, cocina…), subencargado/a, jefe/a de cocina o salón, gerente de turno, supervisor/a, responsable de turno o local, o líder de equipo. No cuenta "encargada de limpieza" o "de edificio". No suma puntaje: es un filtro para encontrarlos rápido.</li>
+      <li><b>Fue encargado/a:</b> algún puesto del CV dice encargado/a (de local, turno, salón, caja, cocina…), subencargado/a, jefe/a de cocina o salón, gerente de turno, supervisor/a, responsable de turno o local, o líder de equipo. No cuenta "encargada de limpieza" o "de edificio". No suma puntaje: es un filtro para encontrarlos rápido. "Encargados estables" = fue encargado/a y además en promedio duró 2 años o más en sus trabajos.</li>
       <li><b>No se usó:</b> edad, sexo, estado civil, hijos, nacionalidad ni foto.</li>
       <li><b>Ojo:</b> los datos los leyó Claude de cada CV. Antes de llamar, abrí el CV con el botón.</li>
     </ul>
@@ -317,7 +317,8 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
     const rows = D.cands.filter(c => c.lista === tab).filter(c => {
       if (fp && (c.part || 'sin dato') !== fp) return false;
       if (fg && c.grupo !== fg) return false;
-      if (fen === 'si' && !(c.enc && c.enc.length)) return false;
+      if ((fen === 'si' || fen === 'estable') && !(c.enc && c.enc.length)) return false;
+      if (fen === 'estable' && !c.grupo.startsWith('1.')) return false;
       if (fe){ const e = (estados[c.id]||{}).estado || ''; if ((e || 'sinver') !== fe) return false; }
       if (q){
         const hay = (c.n+' '+c.loc+' '+c.part+' '+c.res+' '+c.ts.map(j=>j.e+' '+j.c).join(' ')).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
