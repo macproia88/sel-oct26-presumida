@@ -129,7 +129,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
       <li><b>Meses en cada trabajo:</b> del mes que empezó al que terminó, contando los dos (03/2021 a 02/2023 = 24). "Actualidad" = octubre 2026. Si el CV pone solo el año, se toma julio de ese año.</li>
       <li><b>Promedio por trabajo:</b> suma de meses de los trabajos con fecha ÷ cantidad de esos trabajos. Los que no tienen fecha no entran.</li>
       <li><b>Permanencia:</b> Estable = promedio de 2 años o más. Cambia seguido = promedio menor a 1 año y 2 o más trabajos de menos de 1 año. Sin fechas = ningún trabajo tiene fechas. El resto, Intermedio.</li>
-      <li><b>Descartados:</b> los que no cumplen el aviso (zona, full time o experiencia) se borran y no aparecen en el tablero.</li>
+      <li><b>Descartados:</b> los que no cumplen el aviso (zona, full time o experiencia) o sacan menos de 79 puntos se borran y no aparecen en el tablero. Los de "Revisar a mano" no se borran porque todavía no se pudo leer su CV.</li>
       <li><b>Requisitos del aviso:</b> vivir en Vicente López, San Isidro o San Martín; disponibilidad full time; cocina con experiencia en cocina o gastronomía; atención con al menos un trabajo (para poder dar referencias). Si el CV no dice zona o disponibilidad, no se descarta: queda con alerta.</li>
       <li><b>Puntaje (0 a 100):</b> Permanencia hasta 35 · Experiencia hasta 30 · Cercanía hasta 20 · Aviso hasta 15. Tocá "Ver trabajos y puntaje" en cada ficha para ver el detalle.</li>
       <li><b>Fue encargado/a:</b> algún puesto del CV dice encargado/a (de local, turno, salón, caja, cocina…), subencargado/a, jefe/a de cocina o salón, gerente de turno, supervisor/a, responsable de turno o local, o líder de equipo. No cuenta "encargada de limpieza" o "de edificio". No suma puntaje: es un filtro para encontrarlos rápido. "Encargados estables" = fue encargado/a y además en promedio duró 2 años o más en sus trabajos.</li>
@@ -332,7 +332,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
     const frag = document.createDocumentFragment(); rows.forEach(c => frag.append(card(c))); list.append(frag);
   }
 
-  $('#sub').textContent = 'CVs recibidos hasta el ' + (D.corte || D.generado) + ' · ' + D.personas + ' candidatos que cumplen o hay que revisar · ' + (D.descartados || 0) + ' descartados por no cumplir el aviso';
+  $('#sub').textContent = 'CVs recibidos hasta el ' + (D.corte || D.generado) + ' · ' + D.personas + ' candidatos que cumplen o hay que revisar · ' + (D.descartados || 0) + ' descartados (no cumplen el aviso o menos de 79 puntos)';
   fillSelects(); renderTabs(); render();
   ['#q','#fPart','#fGrupo','#fEstado','#fEnc'].forEach(s => $(s).addEventListener('input', render));
 

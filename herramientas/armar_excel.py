@@ -393,7 +393,7 @@ rows = [
     ('   de esos, estables (2 años o más)', sum(1 for r in rank_at + rank_co if r['grupo'].startswith('1.')), 'Aparecen primero en cada ranking, pintados de verde.'),
     ('   de esos, sin fechas, revisar', sum(1 for r in rank_at + rank_co if r['grupo'].startswith('Sin fechas')), 'El CV no tiene fechas: no se puede medir permanencia. Van al final, en gris.'),
     ('Cambian seguido', len(cambian), 'Cumplen el aviso, pero en promedio duran menos de 1 año y tuvieron 2 o más trabajos cortos.'),
-    ('Descartados (no cumplen el aviso)', int(os.environ.get('CVS_DESCARTADOS', '0') or 0) + len(nocumplen), 'Viven fuera de Vicente López, San Isidro o San Martín, no pueden full time, o no tienen experiencia. Se borraron del tablero y del Excel; solo queda anotado que el mail ya se leyó.'),
+    ('Descartados (no cumplen o menos de 79 puntos)', int(os.environ.get('CVS_DESCARTADOS', '0') or 0) + len(nocumplen), 'No cumplen el aviso (zona, full time o experiencia) o sacaron menos de 79 puntos. Se borraron del tablero y del Excel; solo queda anotado que el mail ya se leyó.'),
     ('Encargados', sum(1 for r in cands if r['enc']), 'Personas que ya trabajaron como encargado/a, jefe/a o supervisor/a. Pestaña Encargados (agrupados por lista).'),
     ('Encargados estables', sum(1 for r in cands if r['enc'] and r['grupo'].startswith('1.') and not r['motivos']), 'Fueron encargado/a y duran 2 años o más en promedio, y cumplen el aviso. Pestaña Encargados estables.'),
     ('Revisar a mano', len(sinleer), 'No se pudo leer el CV: mandaron un link de Drive, el mail no traía adjunto o el archivo es ilegible. Cumplen la zona o no se sabe; abrilos con el link.'),
