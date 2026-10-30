@@ -27,7 +27,7 @@ Hablale a Walter en español rioplatense y llamalo "Salva". Solo lectura en Gmai
 
 ## 4. Reconstruir
 `cd /home/claude/cvs && python3 -I scripts/construir.py armar /home/claude/sel-oct26-presumida /home/claude/cvs CLAVE "DD/MM/AAAA HH:MM"`
-- Tiene que terminar con `OK | descartados total: ... | personas: ...`. Los que no cumplen el aviso (zona, full time, experiencia) o sacan menos de 79 puntos se DESCARTAN solos: se borran sus datos y su CV y solo queda el ID del mail en `procesados` (para no volver a leerlo). Descartados + personas no puede bajar respecto de la vez anterior.
+- Tiene que terminar con `OK | descartados total: ... | personas: ...`. Los que no cumplen el aviso (zona, full time, experiencia) o cambian de trabajo seguido o sacan menos de 79 puntos se DESCARTAN solos: se borran sus datos y su CV y solo queda el ID del mail en `procesados` (para no volver a leerlo). Descartados + personas no puede bajar respecto de la vez anterior.
 - Los CVs de descartados que estaban publicados en el tablero de Claude están en `/home/claude/cvs/borrar_artifact.json`: al publicar, pasalos en `files` con valor null.
 - Deja: `/home/claude/cvs/Candidatos_Busqueda_Octubre_2026.xlsx`, `/home/claude/cvs/tablero_seleccion.html`, `/home/claude/cvs/nuevos_artifact.json` (CVs nuevos para el tablero de Claude, rutas `cv/<archivo>` que están en `/home/claude/cvs/artifact/cv/`).
 - Recalculá el Excel con el script `recalc.py` de la skill xlsx (cargar la skill) y confirmá 0 errores.

@@ -193,7 +193,7 @@ def armar(repo, work, pw, corte):
     # 1b) DESCARTAR a los que no cumplen el aviso: se borran sus datos y su CV; solo queda el ID del mail como "ya leído"
     borrar_art = []
     PUNTAJE_MIN = int(est.get('puntaje_min', 79))  # Walter pidió descartar también los de menos de 79 puntos
-    fuera = [c for c in d['cands'] if c['lista'] == 'nocumplen' or (c['lista'] in ('atencion', 'cocina', 'cambian') and c['tot'] < PUNTAJE_MIN)]
+    fuera = [c for c in d['cands'] if c['lista'] in ('nocumplen', 'cambian') or (c['lista'] in ('atencion', 'cocina') and c['tot'] < PUNTAJE_MIN)]
     for c in fuera:
         for mid in c['mids']:
             base_mid = mid.split('_')[0]
