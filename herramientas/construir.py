@@ -183,11 +183,36 @@ def armar(repo, work, pw, corte):
     est_p = os.path.join(work, 'estado.json')
     est = json.load(open(est_p)) if os.path.exists(est_p) else {'procesados': [], 'cv': {}, 'artifact_url': ''}
     # 1) Excel + datos (armar_excel.py)
-    env = dict(os.environ, CVS_BASE=work, CVS_CORTE=corte)
-    r = subprocess.run([sys.executable, '-I', os.path.join(AQUI, 'armar_excel.py')], env=env, capture_output=True, text=True)
-    print(r.stdout[-800:]);
-    if r.returncode: print(r.stderr[-3000:]); sys.exit('armar_excel.py falló')
-    d = json.load(open(os.path.join(work, 'datos_tablero.json')))
+    def correr_excel():
+        env = dict(os.environ, CVS_BASE=work, CVS_CORTE=corte, CVS_DESCARTADOS=str(est.get('descartados', 0)))
+        r = subprocess.run([sys.executable, '-I', os.path.join(AQUI, 'armar_excel.py')], env=env, capture_output=True, text=True)
+        print(r.stdout[-800:])
+        if r.returncode: print(r.stderr[-3000:]); sys.exit('armar_excel.py falló')
+        return json.load(open(os.path.join(work, 'datos_tablero.json')))
+    d = correr_excel()
+    # 1b) DESCARTAR a los que no cumplen el aviso: se borran sus datos y su CV; solo queda el ID del mail como "ya leído"
+    borrar_art = []
+    fuera = [c for c in d['cands'] if c['lista'] == 'nocumplen']
+    for c in fuera:
+        for mid in c['mids']:
+            base_mid = mid.split('_')[0]
+            for f in glob.glob(os.path.join(work, 'registros', base_mid + '*.json')):
+                os.remove(f)
+            est['procesados'] = sorted(set(est['procesados']) | {base_mid})
+            shutil.rmtree(os.path.join(work, 'adjuntos', base_mid), ignore_errors=True)
+            for ext in ('.txt', '.meta.json'):
+                pth = os.path.join(work, 'textos', base_mid + ext)
+                if os.path.exists(pth): os.remove(pth)
+        info = est['cv'].pop(c['id'], None)
+        if info:
+            pth = os.path.join(repo, info['gh'])
+            if os.path.exists(pth): os.remove(pth)
+            borrar_art.append(info['art'])
+        est['descartados'] = est.get('descartados', 0) + 1
+    if fuera:
+        print('descartados ahora:', len(fuera), '| total descartados:', est['descartados'])
+        d = correr_excel()
+    json.dump(borrar_art, open(os.path.join(work, 'borrar_artifact.json'), 'w'))
     # 2) CVs: los que ya estaban se reutilizan; los nuevos se buscan en WORK/adjuntos
     os.makedirs(os.path.join(repo, 'cv'), exist_ok=True)
     art_dir = os.path.join(work, 'artifact', 'cv'); os.makedirs(art_dir, exist_ok=True)
@@ -233,7 +258,7 @@ def armar(repo, work, pw, corte):
     est['corte'] = corte
     json.dump(est, open(est_p, 'w'), ensure_ascii=False, indent=1)
     open(os.path.join(repo, 'estado.bin'), 'wb').write(enc(g, json.dumps({'registros': regs, 'estado': est}, ensure_ascii=False).encode()))
-    print(f'OK | personas: {len(d["cands"])} | CVs nuevos encriptados: {nuevos_cv} | sin archivo de CV: {sin_cv} | datos hasta: {corte}')
+    print(f'OK | descartados total: {est.get("descartados", 0)} | personas: {len(d["cands"])} | CVs nuevos encriptados: {nuevos_cv} | sin archivo de CV: {sin_cv} | datos hasta: {corte}')
 
 
 if __name__ == '__main__':

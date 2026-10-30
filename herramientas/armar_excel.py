@@ -363,7 +363,7 @@ nocumplen.sort(key=lambda r: (r['motivos'][0][:20], -r['total']))
 hoja_candidatos('Ranking Atención', rank_at)
 hoja_candidatos('Ranking Cocina', rank_co)
 hoja_candidatos('Cambian seguido', cambian)
-hoja_candidatos('No cumplen', nocumplen, extra_motivo=True)
+if nocumplen: hoja_candidatos('No cumplen', nocumplen, extra_motivo=True)
 ws_sl = hoja_candidatos('Revisar a mano', sinleer)
 for row in range(2, ws_sl.max_row + 1):
     r = sinleer[row - 2]
@@ -393,7 +393,7 @@ rows = [
     ('   de esos, estables (2 años o más)', sum(1 for r in rank_at + rank_co if r['grupo'].startswith('1.')), 'Aparecen primero en cada ranking, pintados de verde.'),
     ('   de esos, sin fechas, revisar', sum(1 for r in rank_at + rank_co if r['grupo'].startswith('Sin fechas')), 'El CV no tiene fechas: no se puede medir permanencia. Van al final, en gris.'),
     ('Cambian seguido', len(cambian), 'Cumplen el aviso, pero en promedio duran menos de 1 año y tuvieron 2 o más trabajos cortos.'),
-    ('No cumplen', len(nocumplen), 'Con el motivo en la primera columna.'),
+    ('Descartados (no cumplen el aviso)', int(os.environ.get('CVS_DESCARTADOS', '0') or 0) + len(nocumplen), 'Viven fuera de Vicente López, San Isidro o San Martín, no pueden full time, o no tienen experiencia. Se borraron del tablero y del Excel; solo queda anotado que el mail ya se leyó.'),
     ('Encargados', sum(1 for r in cands if r['enc']), 'Personas que ya trabajaron como encargado/a, jefe/a o supervisor/a. Pestaña Encargados (agrupados por lista).'),
     ('Encargados estables', sum(1 for r in cands if r['enc'] and r['grupo'].startswith('1.') and not r['motivos']), 'Fueron encargado/a y duran 2 años o más en promedio, y cumplen el aviso. Pestaña Encargados estables.'),
     ('Revisar a mano', len(sinleer), 'No se pudo leer el CV: mandaron un link de Drive, el mail no traía adjunto o el archivo es ilegible. Cumplen la zona o no se sabe; abrilos con el link.'),
@@ -498,5 +498,5 @@ tab = []
 for lista, rs in (('atencion', rank_at), ('cocina', rank_co), ('cambian', cambian), ('nocumplen', nocumplen), ('revisar', sinleer)):
     for pos, r in enumerate(rs, 1):
         b = bloque(r, lista); b['pos'] = pos; tab.append(b)
-json.dump({'generado': CORTE, 'corte': CORTE, 'mails': len(regs), 'personas': len(cands), 'cands': tab}, open(os.path.join(BASE, 'datos_tablero.json'), 'w'), ensure_ascii=False)
+json.dump({'generado': CORTE, 'corte': CORTE, 'descartados': int(os.environ.get('CVS_DESCARTADOS', '0') or 0) + len(nocumplen), 'mails': len(regs), 'personas': len(cands), 'cands': tab}, open(os.path.join(BASE, 'datos_tablero.json'), 'w'), ensure_ascii=False)
 print('tablero', len(tab))
