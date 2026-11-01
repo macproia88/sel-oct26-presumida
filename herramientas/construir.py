@@ -86,6 +86,31 @@ def buscar_cv(work, mids, destino_sin_ext):
     return destino_sin_ext + '.pdf'
 
 
+M = 'https://macproia88.github.io/marcas/'
+PAGINAS = [(M + 'tablero-presumida-v2.html', 'Tablero La Presumida'), (M + 'mostrador.html', 'Tablero de mostrador'),
+           (M + 'apps.html', 'Tablero de apps'), (M + 'tablero-club.html', 'Tablero del club'),
+           (M + 'reconocimiento.html', 'Agenda de reconocimiento'), (None, 'Selección de personal (CVs)')]
+
+
+def sello_y_links(s):
+    """Arriba: fecha y hora de la última actualización. Abajo: links a las otras páginas del negocio (igual que en el repo marcas)."""
+    import re, datetime as dt
+    ahora = dt.datetime.now(dt.timezone(dt.timedelta(hours=-3)))
+    s = re.sub(r'<div id="lp-upd"[^>]*>.*?</div>\s*', '', s, flags=re.S)
+    s = re.sub(r'<nav id="lp-nav".*?</nav>\s*', '', s, flags=re.S)
+    upd = (f'<div id="lp-upd" style="font:12px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;color:#6b6b6b;text-align:right;'
+           f'padding:6px 16px;position:relative;z-index:31">Última actualización: {ahora:%d/%m/%Y} a las {ahora:%H:%M} (hora Argentina)</div>\n')
+    links = ' · '.join(f'<b>{n}</b>' if not h else f'<a href="{h}" style="color:#b85042;text-decoration:none;white-space:nowrap">{n}</a>'
+                       for h, n in PAGINAS)
+    nav = (f'<nav id="lp-nav" style="font:13px/1.6 system-ui,-apple-system,Segoe UI,sans-serif;max-width:1180px;margin:24px auto 16px;'
+           f'padding:12px 16px;border-top:1px solid rgba(128,128,128,.35);color:#6b6b6b">'
+           f'<div style="font-weight:600;margin-bottom:4px">Páginas del negocio</div>{links}</nav>\n')
+    i = s.find('<body>') + len('<body>')
+    s = s[:i] + '\n' + upd + s[i:]
+    j = s.rfind('</body>')
+    return s[:j] + nav + s[j:]
+
+
 def github_index(t):
     """Convierte la plantilla del tablero de Claude en la versión con contraseña para GitHub Pages."""
     s = '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow">' + t.replace('<meta name="claude:viewport-fit-sides" content="cover">', '')
@@ -238,7 +263,7 @@ def armar(repo, work, pw, corte):
     for c in dg['cands']: c['cv'] = c.pop('cv_gh'); c.pop('cv_art')
     open(os.path.join(repo, 'datos.bin'), 'wb').write(enc(g, json.dumps(dg, ensure_ascii=False).encode()))
     plantilla = open(os.path.join(AQUI, 'tablero_template.html')).read()
-    open(os.path.join(repo, 'index.html'), 'w').write(github_index(plantilla))
+    open(os.path.join(repo, 'index.html'), 'w').write(sello_y_links(github_index(plantilla)))
     open(os.path.join(repo, '.nojekyll'), 'w').write('')
     # 4) tablero Claude (datos adentro de la página)
     da = json.loads(json.dumps(d))
