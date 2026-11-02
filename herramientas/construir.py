@@ -89,7 +89,7 @@ def buscar_cv(work, mids, destino_sin_ext):
 M = 'https://macproia88.github.io/marcas/'
 PAGINAS = [(M + 'tablero-presumida-v2.html', 'Tablero La Presumida'), (M + 'mostrador.html', 'Tablero de mostrador'),
            (M + 'apps.html', 'Tablero de apps'), (M + 'tablero-club.html', 'Tablero del club'),
-           (M + 'reconocimiento.html', 'Agenda de reconocimiento'), (M + 'ranking-anual.html', 'Ranking del año'), (None, 'Selección de personal (CVs)')]
+           (M + 'reconocimiento.html', 'Agenda de reconocimiento'), (M + 'ranking-anual.html', 'Ranking del año'), (M + 'ranking-mostrador.html', 'Ranking de mostrador'), (None, 'Selección de personal (CVs)')]
 
 
 def sello_y_links(s):
