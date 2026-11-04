@@ -4,7 +4,7 @@ Instrucciones para la sesión programada de Claude. Repositorio: `macproia88/sel
 Clave de los datos: la que figura en el mensaje de la tarea programada.
 Carpeta de trabajo: `/home/claude/cvs` (las rutas de `INSTRUCCIONES_LOTE.md` y `extraer.py` asumen esa carpeta).
 
-Hablale a Walter en español rioplatense y llamalo "Salva". Solo lectura en Gmail: nunca mandar, responder, etiquetar ni mover mails.
+Hablale a Walter en español rioplatense y llamalo "Salva". En Gmail no se manda, responde ni borra nada. La ÚNICA modificación permitida (la pidió Walter el 04/11/2026) es archivar los CVs ya leídos en la carpeta "CV" (paso 5.3).
 
 ## 1. Preparar
 1. `add_repo` (owner `macproia88`, repo `sel-oct26-presumida`, access `push`) y clonar con `git clone --depth 1 https://github.com/macproia88/sel-oct26-presumida /home/claude/sel-oct26-presumida` (timeout largo, ~10 min).
@@ -37,6 +37,8 @@ Hablale a Walter en español rioplatense y llamalo "Salva". Solo lectura en Gmai
    (si el push falla por acceso, avisale a Walter que hay que reconectar GitHub en claude.ai → Personalización → Conectores → Integración con GitHub).
 2. Tablero de Claude (URL en `estado.json` → `artifact_url`): primero `Artifact` action `read` con esa url; después `Artifact` publish con `url`, `file_path: /home/claude/cvs/tablero_seleccion.html` y `files` = los CVs nuevos de `nuevos_artifact.json` mapeados como `{"cv/<archivo>": "artifact/cv/<archivo>"}` (rutas relativas a `/home/claude/cvs`; hasta 250 por publicación). Sin `capabilities` (se mantienen).
 
+3. Archivar en Gmail los CVs leídos (pedido de Walter): para cada mail nuevo de esta corrida que sea una postulación (tenga o no `registros/<ID>.json` después de armar, o haya quedado descartado), llamá `mcp__Gmail__update_message_labels` con `messageId=<ID>`, `addLabelIds=["Label_1028625076126494661"]` (carpeta "CV") y `removeLabelIds=["INBOX"]`. NO toques los mails que no son CVs (facturas, Mercado Pago, avisos), ni los que quedaron sin leer porque el adjunto no se pudo abrir (esos quedan en Recibidos para que Walter los vea). Si son muchos, repartilos entre subagentes. Si una llamada falla, reintentá una vez y mencioná en el aviso cuántos no se pudieron archivar.
+
 ## 6. Avisar
 - `SendUserFile` con el Excel actualizado.
-- `SendUserMessage` corto: cuántos mails nuevos se leyeron, cuántos entraron a cada ranking (Atención / Cocina) y los mejores nuevos con su puntaje, cuántos quedaron en "Revisar a mano", y la nueva fecha de corte. Si no hubo CVs nuevos, decilo igual y actualizá la fecha de corte (pasos 4 y 5 igual).
+- `SendUserMessage` corto: cuántos mails nuevos se leyeron, cuántos se archivaron en la carpeta CV, cuántos entraron a cada ranking (Atención / Cocina) y los mejores nuevos con su puntaje, cuántos quedaron en "Revisar a mano", y la nueva fecha de corte. Si no hubo CVs nuevos, decilo igual y actualizá la fecha de corte (pasos 4 y 5 igual).
