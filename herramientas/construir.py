@@ -90,9 +90,10 @@ M = 'https://macproia88.github.io/marcas/'
 PAGINAS = [(M + 'tablero-presumida-v2.html', 'Tablero La Presumida'), (M + 'mostrador.html', 'Tablero de mostrador'),
            (M + 'apps.html', 'Tablero de apps'), (M + 'tablero-club.html', 'Tablero del club'),
            (M + 'reconocimiento.html', 'Agenda de reconocimiento'), (M + 'ranking-anual.html', 'Ranking del año'), (M + 'ranking-mostrador.html', 'Ranking de mostrador'), (None, 'Selección de personal (CVs)')]
+TABLEROS = {}  # clave -> (url, nombre); se completa en armar()
 
 
-def sello_y_links(s):
+def sello_y_links(s, paginas=None):
     """Arriba: fecha y hora de la última actualización. Abajo: links a las otras páginas del negocio (igual que en el repo marcas)."""
     import re, datetime as dt
     ahora = dt.datetime.now(dt.timezone(dt.timedelta(hours=-3)))
@@ -101,7 +102,7 @@ def sello_y_links(s):
     upd = (f'<div id="lp-upd" style="font:12px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;color:#6b6b6b;text-align:right;'
            f'padding:6px 16px;position:relative;z-index:31">Última actualización: {ahora:%d/%m/%Y} a las {ahora:%H:%M} (hora Argentina)</div>\n')
     links = ' · '.join(f'<b>{n}</b>' if not h else f'<a href="{h}" style="color:#b85042;text-decoration:none;white-space:nowrap">{n}</a>'
-                       for h, n in PAGINAS)
+                       for h, n in (paginas or PAGINAS))
     nav = (f'<nav id="lp-nav" style="font:13px/1.6 system-ui,-apple-system,Segoe UI,sans-serif;max-width:1180px;margin:24px auto 16px;'
            f'padding:12px 16px;border-top:1px solid rgba(128,128,128,.35);color:#6b6b6b">'
            f'<div style="font-weight:600;margin-bottom:4px">Páginas del negocio</div>{links}</nav>\n')
@@ -203,6 +204,50 @@ def github_index(t):
     return s
 
 
+def es_encargado(c):
+    return bool(c.get('enc')) and c['lista'] in ('atencion', 'cocina')
+
+
+TABS_EQUIPO = None  # usa las pestañas de la plantilla (Atención, Cocina, Revisar a mano)
+TABS_ENC = [
+    ['enc', 'Encargados', 'Fueron encargados/as (de local, turno, salón, caja o cocina, supervisores, gerentes de turno) y cumplen el aviso. De mayor a menor puntaje. Con el filtro "Encargados estables" ves solo los que duraron 2 años o más en promedio.'],
+]
+
+
+def datos_tablero(da, clave_t, excl_ids, corte):
+    t = json.loads(json.dumps(da))
+    if clave_t == 'equipo':
+        t['cands'] = [c for c in t['cands'] if c['id'] not in excl_ids]
+        t['titulo'] = ['Selección', 'Equipo']; t['quien'] = 'Tablero de Ale (vendedores/as y cocina)'
+    else:
+        cs = [c for c in t['cands'] if es_encargado(c) and c['id'] not in excl_ids]
+        for c in cs: c['lista'] = 'enc'
+        cs.sort(key=lambda c: (not c['grupo'].startswith('1.'), -c['tot']))
+        cont = {}
+        for c in cs: cont[c['lista']] = cont.get(c['lista'], 0) + 1; c['pos'] = cont[c['lista']]
+        t['cands'] = cs; t['tabs'] = TABS_ENC
+        t['titulo'] = ['Selección', 'Encargados']; t['quien'] = 'Tablero de Sebastián (búsqueda de encargados/as)'
+    t['personas'] = len(t['cands'])
+    t['desc_tablero'] = len(excl_ids)
+    return t
+
+
+def descartes(work, clave_t, carpeta):
+    """Lee los estados guardados en la base de un tablero (bajados con ArtifactData list + out_dir)
+    y suma a estado.json los IDs marcados 'descartado' en ese tablero."""
+    est_p = os.path.join(work, 'estado.json'); est = json.load(open(est_p))
+    excl = est.setdefault('excl', {'equipo': [], 'encargados': []})
+    nuevos = []
+    for f in glob.glob(os.path.join(carpeta, '**', '*.json'), recursive=True):
+        doc = json.load(open(f))
+        v = doc.get('data', doc) if isinstance(doc, dict) else {}
+        did = doc.get('id') or doc.get('doc_id') or os.path.basename(f)[:-5]
+        if isinstance(v, dict) and v.get('estado') == 'descartado' and did not in excl[clave_t]:
+            excl[clave_t].append(did); nuevos.append(did)
+    json.dump(est, open(est_p, 'w'), ensure_ascii=False, indent=1)
+    print(f'{clave_t}: {len(nuevos)} descartados nuevos | total en ese tablero: {len(excl[clave_t])}')
+
+
 def armar(repo, work, pw, corte):
     g = clave(repo, pw)
     est_p = os.path.join(work, 'estado.json')
@@ -219,6 +264,17 @@ def armar(repo, work, pw, corte):
     borrar_art = []
     PUNTAJE_MIN = int(est.get('puntaje_min', 79))  # Walter pidió descartar también los de menos de 79 puntos
     fuera = [c for c in d['cands'] if c['lista'] in ('nocumplen', 'cambian') or (c['lista'] in ('atencion', 'cocina') and c['tot'] < PUNTAJE_MIN)]
+    # Descartados a mano en cada tablero (los lee la actualización de la base de cada tablero, ver 'descartes').
+    # Se borra del todo solo si ya no queda en ningún tablero: equipo (todos) y encargados (los que fueron encargados).
+    excl = est.setdefault('excl', {'equipo': [], 'encargados': []})
+    ex_eq, ex_en = set(excl.get('equipo', [])), set(excl.get('encargados', []))
+    ids_fuera = {c['id'] for c in fuera}
+    for c in d['cands']:
+        if c['id'] in ids_fuera: continue
+        en_enc = es_encargado(c)
+        if c['id'] in ex_eq and (not en_enc or c['id'] in ex_en):
+            fuera.append(c); ids_fuera.add(c['id'])
+            est['descartados_a_mano'] = est.get('descartados_a_mano', 0) + 1
     for c in fuera:
         for mid in c['mids']:
             base_mid = mid.split('_')[0]
@@ -268,8 +324,19 @@ def armar(repo, work, pw, corte):
     # 4) tablero Claude (datos adentro de la página)
     da = json.loads(json.dumps(d))
     for c in da['cands']: c['cv'] = c.pop('cv_art'); c.pop('cv_gh')
-    open(os.path.join(work, 'tablero_seleccion.html'), 'w').write(
-        plantilla.replace('/*DATA*/', json.dumps(da, ensure_ascii=False).replace('</', '<\\/')))
+    urls = {'equipo': est.get('artifact_url', ''), 'encargados': est.get('artifact_url_encargados', '')}
+    pags = PAGINAS[:-1] + [(urls['equipo'] or None, 'Selección: equipo (Ale)'), (urls['encargados'] or None, 'Selección: encargados (Sebastián)')]
+    for clave_t, nombre in (('equipo', 'tablero_seleccion.html'), ('encargados', 'tablero_encargados.html')):
+        t = datos_tablero(da, clave_t, set(est['excl'].get(clave_t, [])), corte)
+        pg = [(h if n != pags[-2 if clave_t == 'equipo' else -1][1] else None, n) for h, n in pags]
+        html = plantilla.replace('/*DATA*/', json.dumps(t, ensure_ascii=False).replace('</', '<\\/'))
+        open(os.path.join(work, nombre), 'w').write(sello_y_links(html, pg))
+        print(f'tablero {clave_t}: {t["personas"]} candidatos | descartados a mano ahí: {t["desc_tablero"]}')
+        if clave_t == 'encargados':
+            ya = set(est.get('enc_publicados', []))
+            hacen_falta = sorted({c['cv'] for c in t['cands'] if c.get('cv')} - ya)
+            json.dump(hacen_falta, open(os.path.join(work, 'nuevos_encargados.json'), 'w'))
+            est['enc_publicados'] = sorted(ya | set(hacen_falta))
     json.dump(nuevos_art, open(os.path.join(work, 'nuevos_artifact.json'), 'w'))
     # 5) estado encriptado (registros + mails procesados + mapa de CVs)
     regs = []
@@ -290,5 +357,6 @@ def armar(repo, work, pw, corte):
 if __name__ == '__main__':
     acc = sys.argv[1]
     if acc == 'abrir': abrir(sys.argv[2], sys.argv[3], sys.argv[4])
+    elif acc == 'descartes': descartes(sys.argv[2], sys.argv[3], sys.argv[4])
     elif acc == 'armar': armar(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
     else: sys.exit(__doc__)

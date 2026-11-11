@@ -64,6 +64,8 @@ nav.tabs .wrap{display:flex;gap:6px;overflow-x:auto;padding-block:10px;scrollbar
 .res{font-size:14px;min-width:0}
 .alerts{grid-column:2;display:flex;flex-wrap:wrap;gap:6px}
 .al{font-size:12px;background:var(--warn-soft);color:var(--warn);padding:2px 8px;border-radius:6px}
+.card.desc{opacity:.55}
+.desc-aviso{grid-column:1 / -1;font-size:13px;font-weight:700;color:var(--bad);background:var(--bad-soft);border-radius:6px;padding:6px 8px}
 .mot{font-size:13px;background:var(--bad-soft);color:var(--bad);padding:4px 8px;border-radius:6px}
 .actions{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-top:1px dashed var(--line);padding-top:10px;margin-top:6px}
 .btn{font:inherit;font-size:14px;font-weight:600;text-decoration:none;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
@@ -107,7 +109,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
 .lock label.rec{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--muted)}
 .lock button{font:inherit;font-weight:700;font-size:16px;background:var(--yolk);color:var(--ink-on-yolk);border:0;border-radius:8px;padding:12px;cursor:pointer}
 </style></head><body>
-<div id="lp-upd" style="font:12px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;color:#6b6b6b;text-align:right;padding:6px 16px;position:relative;z-index:31">Última actualización: 10/11/2026 a las 07:40 (hora Argentina)</div>
+<div id="lp-upd" style="font:12px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;color:#6b6b6b;text-align:right;padding:6px 16px;position:relative;z-index:31">Última actualización: 10/11/2026 a las 23:14 (hora Argentina)</div>
 
 <div class="lock" id="lock"><form id="lockForm">
   <h2>Selección <span style="background:var(--yolk);padding:0 6px">Octubre</span></h2>
@@ -119,7 +121,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
 </form></div>
 
 <header class="top"><div class="wrap">
-  <div><h1>Selección <span>Octubre 2026</span></h1>
+  <div><h1 id="titulo">Selección <span>Octubre 2026</span></h1>
   <div class="sub" id="sub">Búsqueda Cocinera/o y Vendedor/a · La Presumida</div></div>
   <div class="sub sync" id="sync">Los estados y notas se guardan solo en este dispositivo.</div>
 </div></header>
@@ -147,6 +149,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
       <li><b>Promedio por trabajo:</b> suma de meses de los trabajos con fecha ÷ cantidad de esos trabajos. Los que no tienen fecha no entran.</li>
       <li><b>Permanencia:</b> Estable = promedio de 2 años o más. Cambia seguido = promedio menor a 1 año y 2 o más trabajos de menos de 1 año. Sin fechas = ningún trabajo tiene fechas. El resto, Intermedio.</li>
       <li><b>Descartados:</b> los que no cumplen el aviso (zona, full time o experiencia) o sacan menos de 79 puntos o cambian de trabajo seguido (promedio menor a 1 año y 2 o más trabajos cortos) se borran y no aparecen en el tablero. Los de "Revisar a mano" no se borran porque todavía no se pudo leer su CV.</li>
+      <li><b>Descartado a mano:</b> si en este tablero marcás a alguien como "Descartado", en la próxima actualización (todos los días a las 7:40) se borra de este tablero. Cada tablero tiene sus propios descartados: si Ale descarta a alguien que fue encargado, sigue en el tablero de encargados de Sebastián hasta que él también lo descarte; recién ahí se borran sus datos y su CV.</li>
       <li><b>Requisitos del aviso:</b> vivir en Vicente López, San Isidro o San Martín; disponibilidad full time; cocina con experiencia en cocina o gastronomía; atención con al menos un trabajo (para poder dar referencias). Si el CV no dice zona o disponibilidad, no se descarta: queda con alerta.</li>
       <li><b>Puntaje (0 a 100):</b> Permanencia hasta 35 · Experiencia hasta 30 · Cercanía hasta 20 · Aviso hasta 15. Tocá "Ver trabajos y puntaje" en cada ficha para ver el detalle.</li>
       <li><b>Fue encargado/a:</b> algún puesto del CV dice encargado/a (de local, turno, salón, caja, cocina…), subencargado/a, jefe/a de cocina o salón, gerente de turno, supervisor/a, responsable de turno o local, o líder de equipo. No cuenta "encargada de limpieza" o "de edificio". No suma puntaje: es un filtro para encontrarlos rápido. "Encargados estables" = fue encargado/a y además en promedio duró 2 años o más en sus trabajos.</li>
@@ -199,7 +202,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
   }
   document.getElementById('lock').remove();
 
-  const TABS = [
+  const TABS = D.tabs || [
     ['atencion','Atención','Cumplen el aviso y no cambian de trabajo seguido. Primero los estables (2 años o más), después los intermedios y al final los que no tienen fechas; dentro de cada grupo, de mayor a menor puntaje.'],
     ['cocina','Cocina','Igual que Atención, para la búsqueda de cocinera/o.'],
     ['revisar','Revisar a mano','No se pudo leer el CV (mandaron un link de Drive, el mail no traía adjunto o el archivo no se abrió). Abrilos con el botón.']
@@ -208,7 +211,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
   const GRUPO_CLS = g => g.startsWith('1.') ? 'p-est' : g.startsWith('2.') ? 'p-int' : g.startsWith('Sin fechas') ? 'p-sf' : g==='Cambia seguido' ? 'p-cam' : 'p-sf';
   const GRUPO_TXT = g => g.replace(/^\d\.\s*/,'');
   const $ = s => document.querySelector(s);
-  let tab = 'atencion';
+  let tab = TABS[0][0];
   try { const h = location.hash.slice(1); if (TABS.some(t=>t[0]===h)) tab = h; } catch(e){}
   const estados = {}; // id -> {estado, nota}
   let db = null;
@@ -241,6 +244,13 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
     db.doc('estados/'+id).set(Object.assign({}, estados[id], {at: new Date().toISOString()})).catch(err => {
       $('#sync').textContent = 'No se pudo guardar el estado (' + (err && err.code || 'error') + '). Queda solo en esta pantalla.';
     });
+  }
+
+  function marcarDesc(k, v){
+    k.classList.toggle('desc', v === 'descartado');
+    let a = k.querySelector('.desc-aviso');
+    if (v === 'descartado' && !a){ a = el('div','desc-aviso','Descartado: se borra de este tablero en la próxima actualización (todos los días 7:40). Si fue un error, cambiá el estado antes.'); k.insertBefore(a, k.querySelector('.actions')); }
+    if (v !== 'descartado' && a) a.remove();
   }
 
   function card(c){
@@ -285,7 +295,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
     const sel = el('select','estado'); sel.id = 'est-'+c.id; sel.setAttribute('aria-label','Estado de '+c.n);
     ESTADOS.forEach(([v,t]) => sel.append(new Option(t, v)));
     const st = estados[c.id] || {}; sel.value = st.estado || ''; sel.dataset.v = sel.value;
-    sel.onchange = () => { sel.dataset.v = sel.value; saveEstado(c.id, {estado: sel.value}); if ($('#fEstado').value) render(); };
+    sel.onchange = () => { sel.dataset.v = sel.value; saveEstado(c.id, {estado: sel.value}); marcarDesc(k, sel.value); if ($('#fEstado').value) render(); };
     act.append(sel);
     const nota = el('input','nota'); nota.id = 'nota-'+c.id; nota.placeholder = 'Nota (ej: llamar a la tarde)'; nota.value = st.nota || '';
     nota.onchange = () => saveEstado(c.id, {nota: nota.value.trim()});
@@ -293,6 +303,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
     k.append(act);
 
     const det = el('details','more'); det.append(el('summary', null, 'Ver trabajos y puntaje'));
+    marcarDesc(k, st.estado || '');
     det.addEventListener('toggle', () => { if (det.open && !det.dataset.done){ det.dataset.done = 1; det.append(detalle(c)); } });
     k.append(det);
     return k;
@@ -389,7 +400,8 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
     const frag = document.createDocumentFragment(); rows.forEach(c => frag.append(card(c))); list.append(frag);
   }
 
-  $('#sub').textContent = 'CVs recibidos hasta el ' + (D.corte || D.generado) + ' · ' + D.personas + ' candidatos que cumplen o hay que revisar · ' + (D.descartados || 0) + ' descartados (no cumplen, cambian seguido o menos de 79 puntos)';
+  if (D.titulo){ const h = $('#titulo'); h.textContent = D.titulo[0] + ' '; h.append(el('span', null, D.titulo[1])); document.title = D.titulo[0] + ' ' + D.titulo[1]; }
+  $('#sub').textContent = (D.quien ? D.quien + ' · ' : '') + 'CVs recibidos hasta el ' + (D.corte || D.generado) + ' · ' + D.personas + ' candidatos que cumplen o hay que revisar · ' + (D.descartados || 0) + ' descartados (no cumplen, cambian seguido o menos de 79 puntos)' + (D.desc_tablero ? ' · ' + D.desc_tablero + ' descartados a mano en este tablero' : '');
   fillSelects(); renderTabs(); render();
   ['#q','#fPart','#fGrupo','#fEstado','#fEnc'].forEach(s => $(s).addEventListener('input', render));
 
@@ -408,6 +420,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
         // actualizar controles visibles sin perder lo que se está escribiendo
         Object.keys(estados).forEach(id => {
           const s = document.getElementById('est-'+id); if (s && s !== document.activeElement){ s.value = estados[id].estado; s.dataset.v = s.value; }
+          if (s) marcarDesc(s.closest('.card'), estados[id].estado);
           const n = document.getElementById('nota-'+id); if (n && n !== document.activeElement) n.value = estados[id].nota;
         });
         $('#sync').textContent = 'Los estados y notas se guardan para todos los que abren este tablero.';
