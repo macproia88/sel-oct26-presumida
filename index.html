@@ -108,8 +108,12 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
 .lock .err{color:var(--bad);font-size:14px;min-height:1.2em}
 .lock label.rec{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--muted)}
 .lock button{font:inherit;font-weight:700;font-size:16px;background:var(--yolk);color:var(--ink-on-yolk);border:0;border-radius:8px;padding:12px;cursor:pointer}
+.envbar{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--ink);color:var(--paper);display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));font-size:14px}
+.envbar[hidden]{display:none!important}
+.envbar button{font:inherit;font-weight:700;background:var(--yolk);color:var(--ink-on-yolk);border:0;border-radius:8px;padding:8px 12px;cursor:pointer}
+.reenviar{font-size:13px;color:var(--link);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
 </style></head><body>
-<div id="lp-upd" style="font:12px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;color:#6b6b6b;text-align:right;padding:6px 16px;position:relative;z-index:31">Última actualización: 10/11/2026 a las 23:26 (hora Argentina)</div>
+<div id="lp-upd" style="font:12px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;color:#6b6b6b;text-align:right;padding:6px 16px;position:relative;z-index:31">Última actualización: 10/11/2026 a las 23:29 (hora Argentina)</div>
 
 <div class="lock" id="lock"><form id="lockForm">
   <h2>Selección <span style="background:var(--yolk);padding:0 6px">Octubre</span></h2>
@@ -140,6 +144,8 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
   </div>
   <div class="count" id="count"></div>
   <div class="list" id="list"></div>
+  <p><button type="button" class="reenviar" id="reenviar">Volver a mandar todos mis descartados</button></p>
+  <div style="height:70px"></div>
 
   <details class="guide" id="como">
     <summary>Cómo se calculó</summary>
@@ -158,6 +164,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
     </ul>
   </details>
 </main>
+<div class="envbar" id="envbar" hidden><span id="envtxt"></span><button type="button" id="envbtn">Mandar descartados</button></div>
 
 <script>
 (async function(){
@@ -241,6 +248,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
   function saveEstado(id, patch){
     estados[id] = Object.assign({estado:'', nota:''}, estados[id], patch);
     try { localStorage.setItem('sel_estados', JSON.stringify(estados)); } catch(e){}
+    if (patch && 'estado' in patch) barraEnvio();
     if (!db) return;
     db.doc('estados/'+id).set(Object.assign({}, estados[id], {at: new Date().toISOString()})).catch(err => {
       $('#sync').textContent = 'No se pudo guardar el estado (' + (err && err.code || 'error') + '). Queda solo en esta pantalla.';
@@ -250,7 +258,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
   function marcarDesc(k, v){
     k.classList.toggle('desc', v === 'descartado');
     let a = k.querySelector('.desc-aviso');
-    if (v === 'descartado' && !a){ a = el('div','desc-aviso','Descartado: se borra de este tablero en la próxima actualización (todos los días 7:40). Si fue un error, cambiá el estado antes.'); k.insertBefore(a, k.querySelector('.actions')); }
+    if (v === 'descartado' && !a){ a = el('div','desc-aviso','Descartado: tocá «Mandar descartados» (abajo) y mandá el mail; al otro día a las 7:40 se borra de este tablero.'); k.insertBefore(a, k.querySelector('.actions')); }
     if (v !== 'descartado' && a) a.remove();
   }
 
@@ -404,6 +412,27 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
   if (D.titulo){ const h = $('#titulo'); h.textContent = D.titulo[0] + ' '; h.append(el('span', null, D.titulo[1])); document.title = D.titulo[0] + ' ' + D.titulo[1]; }
   $('#sub').textContent = (D.quien ? D.quien + ' · ' : '') + 'CVs recibidos hasta el ' + (D.corte || D.generado) + ' · ' + D.personas + ' candidatos que cumplen o hay que revisar · ' + (D.descartados || 0) + ' descartados (no cumplen, cambian seguido o menos de 79 puntos)' + (D.desc_tablero ? ' · ' + D.desc_tablero + ' descartados a mano en este tablero' : '');
   fillSelects(); renderTabs(); render();
+  const ENV_KEY = 'sel_estados_enviados';
+  let enviados = {}; try { enviados = JSON.parse(localStorage.getItem(ENV_KEY) || '{}'); } catch(e){}
+  async function codigo(){ try { const raw = new Uint8Array(await crypto.subtle.exportKey('raw', KEY)); const h = new Uint8Array(await crypto.subtle.digest('SHA-256', raw)); return [...h].map(x=>x.toString(16).padStart(2,'0')).join('').slice(0,10); } catch(e){ return ''; } }
+  function descartadosDe(todos){ return D.cands.filter(c => (estados[c.id]||{}).estado === 'descartado' && (todos || !enviados[c.id])); }
+  function barraEnvio(){
+    const p = descartadosDe(false), bar = document.getElementById('envbar');
+    if (!p.length){ bar.hidden = true; return; }
+    document.getElementById('envtxt').textContent = 'Tenés ' + p.length + ' descartado' + (p.length===1?'':'s') + ' sin mandar. Mandalos para que mañana se saquen de la lista.';
+    bar.hidden = false;
+  }
+  async function mandar(todos){
+    const p = descartadosDe(todos); if (!p.length){ alertaSuave('No hay descartados para mandar.'); return; }
+    const cuerpo = 'TABLERO: equipo\nCODIGO: ' + await codigo() + '\n\nDescartados (no tocar este texto):\n' + p.map(c => c.id + ' | ' + c.n).join('\n') + '\n';
+    location.href = 'mailto:lapresumidapastas@gmail.com?subject=' + encodeURIComponent('DESCARTES SELECCION equipo') + '&body=' + encodeURIComponent(cuerpo);
+    p.forEach(c => enviados[c.id] = 1); try { localStorage.setItem(ENV_KEY, JSON.stringify(enviados)); } catch(e){}
+    barraEnvio();
+  }
+  function alertaSuave(t){ document.getElementById('envtxt').textContent = t; document.getElementById('envbar').hidden = false; setTimeout(barraEnvio, 2500); }
+  document.getElementById('envbtn').onclick = () => mandar(false);
+  document.getElementById('reenviar').onclick = () => mandar(true);
+  barraEnvio();
   ['#q','#fPart','#fGrupo','#fEstado','#fEnc'].forEach(s => $(s).addEventListener('input', render));
 
   // Estados compartidos (Llamar / Entrevista / ...) guardados en el tablero
@@ -429,5 +458,5 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
     } catch (e) { $('#sync').textContent = 'Los estados se ven solo en esta pantalla.'; }
   })();
 })();
-</script><nav id="lp-nav" style="font:13px/1.6 system-ui,-apple-system,Segoe UI,sans-serif;max-width:1180px;margin:24px auto 16px;padding:12px 16px;border-top:1px solid rgba(128,128,128,.35);color:#6b6b6b"><div style="font-weight:600;margin-bottom:4px">Páginas del negocio</div><a href="https://macproia88.github.io/marcas/tablero-presumida-v2.html" style="color:#b85042;text-decoration:none;white-space:nowrap">Tablero La Presumida</a> · <a href="https://macproia88.github.io/marcas/mostrador.html" style="color:#b85042;text-decoration:none;white-space:nowrap">Tablero de mostrador</a> · <a href="https://macproia88.github.io/marcas/apps.html" style="color:#b85042;text-decoration:none;white-space:nowrap">Tablero de apps</a> · <a href="https://macproia88.github.io/marcas/tablero-club.html" style="color:#b85042;text-decoration:none;white-space:nowrap">Tablero del club</a> · <a href="https://macproia88.github.io/marcas/reconocimiento.html" style="color:#b85042;text-decoration:none;white-space:nowrap">Agenda de reconocimiento</a> · <a href="https://macproia88.github.io/marcas/ranking-anual.html" style="color:#b85042;text-decoration:none;white-space:nowrap">Ranking del año</a> · <a href="https://macproia88.github.io/marcas/ranking-mostrador.html" style="color:#b85042;text-decoration:none;white-space:nowrap">Ranking de mostrador</a> · <b>Selección de personal (CVs)</b></nav>
+</script><nav id="lp-nav" style="font:13px/1.6 system-ui,-apple-system,Segoe UI,sans-serif;max-width:1180px;margin:24px auto 16px;padding:12px 16px;border-top:1px solid rgba(128,128,128,.35);color:#6b6b6b"><div style="font-weight:600;margin-bottom:4px">Páginas del negocio</div><a href="https://macproia88.github.io/marcas/tablero-presumida-v2.html" style="color:#b85042;text-decoration:none;white-space:nowrap">Tablero La Presumida</a> · <a href="https://macproia88.github.io/marcas/mostrador.html" style="color:#b85042;text-decoration:none;white-space:nowrap">Tablero de mostrador</a> · <a href="https://macproia88.github.io/marcas/apps.html" style="color:#b85042;text-decoration:none;white-space:nowrap">Tablero de apps</a> · <a href="https://macproia88.github.io/marcas/tablero-club.html" style="color:#b85042;text-decoration:none;white-space:nowrap">Tablero del club</a> · <a href="https://macproia88.github.io/marcas/reconocimiento.html" style="color:#b85042;text-decoration:none;white-space:nowrap">Agenda de reconocimiento</a> · <a href="https://macproia88.github.io/marcas/ranking-anual.html" style="color:#b85042;text-decoration:none;white-space:nowrap">Ranking del año</a> · <a href="https://macproia88.github.io/marcas/ranking-mostrador.html" style="color:#b85042;text-decoration:none;white-space:nowrap">Ranking de mostrador</a> · <b>Selección: equipo (Ale)</b> · <a href="https://macproia88.github.io/sel-oct26-presumida/encargados.html" style="color:#b85042;text-decoration:none;white-space:nowrap">Selección: encargados (Sebastián)</a></nav>
 </body></html>

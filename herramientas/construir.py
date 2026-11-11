@@ -112,7 +112,7 @@ def sello_y_links(s, paginas=None):
     return s[:j] + nav + s[j:]
 
 
-def github_index(t):
+def github_index(t, datos_file="datos.bin", store_key="sel_estados", tablero="equipo"):
     """Convierte la plantilla del tablero de Claude en la versión con contraseña para GitHub Pages."""
     s = '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow">' + t.replace('<meta name="claude:viewport-fit-sides" content="cover">', '')
     s = s.replace('</style>', """.lock{position:fixed;inset:0;z-index:30;background:var(--paper);display:flex;align-items:center;justify-content:center;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
@@ -197,9 +197,49 @@ def github_index(t):
     try { localStorage.setItem('sel_estados', JSON.stringify(estados)); } catch(e){}
     if (!db) return;""")
     s = s.replace("Los estados se guardan para todos los que abren este tablero.", "Los estados y notas se guardan solo en este dispositivo.")
+    s = s.replace("fetch('datos.bin', {cache:'no-store'})", "fetch('" + datos_file + "', {cache:'no-store'})")
+    s = s.replace("localStorage.getItem('sel_estados')", "localStorage.getItem('" + store_key + "')").replace("localStorage.setItem('sel_estados',", "localStorage.setItem('" + store_key + "',")
+    s = s.replace("'Descartado: se borra de este tablero en la próxima actualización (todos los días 7:40). Si fue un error, cambiá el estado antes.'",
+                  "'Descartado: tocá «Mandar descartados» (abajo) y mandá el mail; al otro día a las 7:40 se borra de este tablero.'")
+    # barra para mandar los descartados por mail (la actualización diaria lee esos mails)
+    s = s.replace('</style>', '''.envbar{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--ink);color:var(--paper);display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));font-size:14px}
+.envbar[hidden]{display:none!important}
+.envbar button{font:inherit;font-weight:700;background:var(--yolk);color:var(--ink-on-yolk);border:0;border-radius:8px;padding:8px 12px;cursor:pointer}
+.reenviar{font-size:13px;color:var(--link);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
+</style>''', 1)
+    s = s.replace('<div class="list" id="list"></div>', '<div class="list" id="list"></div>\n  <p><button type="button" class="reenviar" id="reenviar">Volver a mandar todos mis descartados</button></p>\n  <div style="height:70px"></div>', 1)
+    s = s.replace('</main>', '</main>\n<div class="envbar" id="envbar" hidden><span id="envtxt"></span><button type="button" id="envbtn">Mandar descartados</button></div>', 1)
+    viejo = "    try { localStorage.setItem('" + store_key + "', JSON.stringify(estados)); } catch(e){}"
+    assert viejo in s
+    s = s.replace(viejo, viejo + "\n    if (patch && 'estado' in patch) barraEnvio();")
+    viejo = "  fillSelects(); renderTabs(); render();"
+    assert viejo in s
+    s = s.replace(viejo, viejo + '''
+  const ENV_KEY = '__SK___enviados';
+  let enviados = {}; try { enviados = JSON.parse(localStorage.getItem(ENV_KEY) || '{}'); } catch(e){}
+  async function codigo(){ try { const raw = new Uint8Array(await crypto.subtle.exportKey('raw', KEY)); const h = new Uint8Array(await crypto.subtle.digest('SHA-256', raw)); return [...h].map(x=>x.toString(16).padStart(2,'0')).join('').slice(0,10); } catch(e){ return ''; } }
+  function descartadosDe(todos){ return D.cands.filter(c => (estados[c.id]||{}).estado === 'descartado' && (todos || !enviados[c.id])); }
+  function barraEnvio(){
+    const p = descartadosDe(false), bar = document.getElementById('envbar');
+    if (!p.length){ bar.hidden = true; return; }
+    document.getElementById('envtxt').textContent = 'Tenés ' + p.length + ' descartado' + (p.length===1?'':'s') + ' sin mandar. Mandalos para que mañana se saquen de la lista.';
+    bar.hidden = false;
+  }
+  async function mandar(todos){
+    const p = descartadosDe(todos); if (!p.length){ alertaSuave('No hay descartados para mandar.'); return; }
+    const cuerpo = 'TABLERO: __TAB__\\nCODIGO: ' + await codigo() + '\\n\\nDescartados (no tocar este texto):\\n' + p.map(c => c.id + ' | ' + c.n).join('\\n') + '\\n';
+    location.href = 'mailto:lapresumidapastas@gmail.com?subject=' + encodeURIComponent('DESCARTES SELECCION __TAB__') + '&body=' + encodeURIComponent(cuerpo);
+    p.forEach(c => enviados[c.id] = 1); try { localStorage.setItem(ENV_KEY, JSON.stringify(enviados)); } catch(e){}
+    barraEnvio();
+  }
+  function alertaSuave(t){ document.getElementById('envtxt').textContent = t; document.getElementById('envbar').hidden = false; setTimeout(barraEnvio, 2500); }
+  document.getElementById('envbtn').onclick = () => mandar(false);
+  document.getElementById('reenviar').onclick = () => mandar(true);
+  barraEnvio();''')
     s = s.replace("      if (!window.claude || !window.claude.use) { $('#sync').textContent = 'Los estados se ven solo en esta pantalla.'; return; }",
                   "      if (!window.claude || !window.claude.use) { return; }")
     s = s.replace("})();\n</script>", "})();\n</script></body></html>")
+    s = s.replace('__SK__', store_key).replace('__TAB__', tablero)
     assert '/*DATA*/' not in s
     return s
 
@@ -251,6 +291,26 @@ def descartes(work, clave_t, carpeta):
             excl[clave_t].append(did); nuevos.append(did)
     json.dump(est, open(est_p, 'w'), ensure_ascii=False, indent=1)
     print(f'{clave_t}: {len(nuevos)} descartados nuevos | total en ese tablero: {len(excl[clave_t])}')
+
+
+def descartes_mail(repo, work, pw, archivo):
+    """Lee el texto de un mail 'DESCARTES SELECCION <tablero>' que mandan las páginas de GitHub
+    y suma esos IDs a estado.json -> excl[tablero]. Controla el CODIGO (sale de la contraseña)."""
+    import hashlib, re
+    k = json.load(open(os.path.join(repo, 'kdf.json')))
+    raw = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=base64.b64decode(k['salt']), iterations=k['it']).derive(pw.encode())
+    ok_cod = hashlib.sha256(raw).hexdigest()[:10]
+    txt = open(archivo, encoding='utf-8', errors='replace').read()
+    mt = re.search(r'TABLERO:\s*(equipo|encargados)', txt); mc = re.search(r'CODIGO:\s*([0-9a-f]{10})', txt)
+    if not mt or not mc or mc.group(1) != ok_cod:
+        print('IGNORADO: el mail no trae TABLERO/CODIGO válidos'); return
+    est_p = os.path.join(work, 'estado.json'); est = json.load(open(est_p))
+    excl = est.setdefault('excl', {'equipo': [], 'encargados': []}); t = mt.group(1)
+    ids = sorted(set(re.findall(r'\b(m[0-9a-f]{12,20}(?:_\d+)?)\s*\|', txt)))
+    nuevos = [i for i in ids if i not in excl[t]]
+    excl[t].extend(nuevos)
+    json.dump(est, open(est_p, 'w'), ensure_ascii=False, indent=1)
+    print(f'{t}: {len(nuevos)} descartados nuevos (de {len(ids)} en el mail) | total en ese tablero: {len(excl[t])}')
 
 
 def armar(repo, work, pw, corte):
@@ -322,9 +382,14 @@ def armar(repo, work, pw, corte):
     # 3) tablero GitHub (encriptado)
     dg = json.loads(json.dumps(d))
     for c in dg['cands']: c['cv'] = c.pop('cv_gh'); c.pop('cv_art')
-    open(os.path.join(repo, 'datos.bin'), 'wb').write(enc(g, json.dumps(dg, ensure_ascii=False).encode()))
     plantilla = open(os.path.join(AQUI, 'tablero_template.html')).read()
-    open(os.path.join(repo, 'index.html'), 'w').write(sello_y_links(github_index(plantilla)))
+    G = 'https://macproia88.github.io/sel-oct26-presumida/'
+    pags_g = PAGINAS[:-1] + [(G, 'Selección: equipo (Ale)'), (G + 'encargados.html', 'Selección: encargados (Sebastián)')]
+    for clave_t, dat, pag, sk in (('equipo', 'datos.bin', 'index.html', 'sel_estados'), ('encargados', 'datos_enc.bin', 'encargados.html', 'sel_estados_enc')):
+        tg = datos_tablero(dg, clave_t, set(est.get('excl', {}).get(clave_t, [])), corte)
+        open(os.path.join(repo, dat), 'wb').write(enc(g, json.dumps(tg, ensure_ascii=False).encode()))
+        yo = 'Selección: equipo (Ale)' if clave_t == 'equipo' else 'Selección: encargados (Sebastián)'
+        open(os.path.join(repo, pag), 'w').write(sello_y_links(github_index(plantilla, dat, sk, clave_t), [(None if n == yo else h, n) for h, n in pags_g]))
     open(os.path.join(repo, '.nojekyll'), 'w').write('')
     # 4) tablero Claude (datos adentro de la página)
     da = json.loads(json.dumps(d))
@@ -363,5 +428,6 @@ if __name__ == '__main__':
     acc = sys.argv[1]
     if acc == 'abrir': abrir(sys.argv[2], sys.argv[3], sys.argv[4])
     elif acc == 'descartes': descartes(sys.argv[2], sys.argv[3], sys.argv[4])
+    elif acc == 'descartes_mail': descartes_mail(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
     elif acc == 'armar': armar(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
     else: sys.exit(__doc__)

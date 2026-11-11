@@ -21,6 +21,14 @@ Para cada uno: `ArtifactData` action `list`, collection `estados`, `query: {"lim
 `cd /home/claude/cvs && python3 -I scripts/construir.py descartes /home/claude/cvs equipo /home/claude/cvs/db_equipo` y lo mismo con `encargados /home/claude/cvs/db_encargados`.
 Eso anota en `estado.json` → `excl` los IDs marcados "Descartado" en cada tablero. Al armar (paso 4) salen de ESE tablero; si alguien quedó descartado en los dos (o en Equipo y no fue encargado), se borran del todo sus datos y su CV. No borres ni cambies nada en las bases de los tableros.
 
+### 1c. Descartados que mandan por mail desde las páginas de GitHub (Ale y Sebastián usan estas)
+Las páginas con contraseña (`https://macproia88.github.io/sel-oct26-presumida/` = Equipo/Ale y `.../encargados.html` = Encargados/Sebastián) guardan los estados en el celular de cada uno; cuando marcan "Descartado" aparece la barra "Mandar descartados", que arma un mail a lapresumidapastas@gmail.com con asunto `DESCARTES SELECCION equipo` o `DESCARTES SELECCION encargados`, un `CODIGO` (sale de la contraseña) y una línea `<id> | <nombre>` por candidato.
+- Buscá con `mcp__Gmail__search_threads`: `subject:"DESCARTES SELECCION" newer_than:4d` (busca también en Enviados). Saltá los message IDs que ya están en `estado.json` → `descartes_mails`.
+- Para cada mensaje: `mcp__Gmail__get_message` con `PLAIN_TEXT`, guardá el cuerpo en `/home/claude/cvs/desc_<ID>.txt` y corré
+  `cd /home/claude/cvs && python3 -I scripts/construir.py descartes_mail /home/claude/sel-oct26-presumida /home/claude/cvs CLAVE /home/claude/cvs/desc_<ID>.txt`
+  (imprime cuántos sumó; si dice IGNORADO, el código no coincide: no lo cuentes y avisalo). Después agregá ese message ID a `descartes_mails` en `estado.json`.
+- No respondas ni muevas esos mails.
+
 ## 2. Buscar CVs nuevos en Gmail
 - Herramienta `mcp__Gmail__search_threads` (cargar con ToolSearch). Consultas (cambiar FECHA por el día anterior al último corte, formato AAAA/MM/DD):
   - `to:lapresumidapastas@gmail.com has:attachment after:FECHA`
