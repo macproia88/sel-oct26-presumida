@@ -166,7 +166,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
   function fillSelects(){
     const parts = [...new Set(D.cands.map(c=>c.part||'sin dato'))].sort();
     parts.forEach(p => $('#fPart').append(new Option(p, p)));
-    ['1. Estable (2 años o más)','2. Intermedio','Sin fechas, revisar','Cambia seguido','CV sin leer','Sin experiencia'].forEach(g => $('#fGrupo').append(new Option(GRUPO_TXT(g), g)));
+    ['1. Estable (2 años o más)','2. Intermedio','Sin fechas, revisar','Cambia seguido','CV sin leer','Sin experiencia'].filter(g => D.cands.some(c => c.grupo === g)).forEach(g => $('#fGrupo').append(new Option(GRUPO_TXT(g), g)));
     ESTADOS.forEach(([v,t]) => $('#fEstado').append(new Option(t, v || 'sinver')));
   }
 
