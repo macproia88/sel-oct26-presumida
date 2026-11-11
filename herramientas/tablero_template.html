@@ -152,6 +152,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
     ['revisar','Revisar a mano','No se pudo leer el CV (mandaron un link de Drive, el mail no traía adjunto o el archivo no se abrió). Abrilos con el botón.']
   ];
   const ESTADOS = [['','Sin ver'],['llamar','Llamar'],['entrevista','Entrevista'],['contratado','Contratado'],['descartado','Descartado']];
+  const enTab = (c, id) => c.lista === id || (id === 'enc' && c.enc && c.enc.length && (c.lista === 'atencion' || c.lista === 'cocina'));
   const GRUPO_CLS = g => g.startsWith('1.') ? 'p-est' : g.startsWith('2.') ? 'p-int' : g.startsWith('Sin fechas') ? 'p-sf' : g==='Cambia seguido' ? 'p-cam' : 'p-sf';
   const GRUPO_TXT = g => g.replace(/^\d\.\s*/,'');
   const $ = s => document.querySelector(s);
@@ -173,7 +174,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
     const box = $('#tabs'); box.textContent = '';
     TABS.forEach(([id, label]) => {
       const b = el('button','tab'); b.setAttribute('role','tab'); b.setAttribute('aria-selected', String(id===tab));
-      b.append(document.createTextNode(label)); b.append(el('span','c', String(D.cands.filter(c=>c.lista===id).length)));
+      b.append(document.createTextNode(label)); b.append(el('span','c', String(D.cands.filter(c=>enTab(c,id)).length)));
       b.onclick = () => { tab = id; try{ history.replaceState(null,'','#'+id) }catch(e){} renderTabs(); render(); };
       box.append(b);
     });
@@ -324,7 +325,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
   function render(){
     const q = $('#q').value.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
     const fp = $('#fPart').value, fg = $('#fGrupo').value, fe = $('#fEstado').value, fen = $('#fEnc').value;
-    const rows = D.cands.filter(c => c.lista === tab).filter(c => {
+    const rows = D.cands.filter(c => enTab(c, tab)).filter(c => {
       if (fp && (c.part || 'sin dato') !== fp) return false;
       if (fg && c.grupo !== fg) return false;
       if ((fen === 'si' || fen === 'estable') && !(c.enc && c.enc.length)) return false;

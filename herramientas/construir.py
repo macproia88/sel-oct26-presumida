@@ -218,7 +218,12 @@ def datos_tablero(da, clave_t, excl_ids, corte):
     t = json.loads(json.dumps(da))
     if clave_t == 'equipo':
         t['cands'] = [c for c in t['cands'] if c['id'] not in excl_ids]
-        t['titulo'] = ['Selección', 'Equipo']; t['quien'] = 'Tablero de Ale (vendedores/as y cocina)'
+        t['tabs'] = [
+            ['atencion', 'Atención', 'Cumplen el aviso y no cambian de trabajo seguido. Primero los estables (2 años o más), después los intermedios y al final los que no tienen fechas; dentro de cada grupo, de mayor a menor puntaje.'],
+            ['cocina', 'Cocina', 'Igual que Atención, para la búsqueda de cocinera/o.'],
+            ['enc', 'Encargados', 'Los de Atención y Cocina que fueron encargados/as (de local, turno, salón, caja o cocina, supervisores, gerentes de turno). Son los mismos que ve Sebastián en su tablero; acá siguen apareciendo también en Atención o Cocina.'],
+            ['revisar', 'Revisar a mano', 'No se pudo leer el CV (mandaron un link de Drive, el mail no traía adjunto o el archivo no se abrió). Abrilos con el botón.']]
+        t['titulo'] = ['Selección', 'Equipo']; t['quien'] = 'Tablero de Ale (vendedores/as, cocina y encargados)'
     else:
         cs = [c for c in t['cands'] if es_encargado(c) and c['id'] not in excl_ids]
         for c in cs: c['lista'] = 'enc'
