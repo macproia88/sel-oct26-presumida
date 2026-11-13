@@ -6,6 +6,8 @@ Carpeta de trabajo: `/home/claude/cvs` (las rutas de `INSTRUCCIONES_LOTE.md` y `
 
 Hablale en español rioplatense y llamalo "Juan" (desde el 10/11/2026 pidió que le digan Juan, no Walter ni Salva). En Gmail no se manda, responde ni borra nada. La ÚNICA modificación permitida (la pidió Walter el 04/11/2026) es archivar los CVs ya leídos en la carpeta "CV" (paso 5.3).
 
+**REGLA DE JUAN (13/11/2026):** en las automatizaciones no le consultes nada ni le hagas preguntas; resolvé todo directamente y solo informá lo que hiciste.
+
 ## 1. Preparar
 1. `add_repo` (owner `macproia88`, repo `sel-oct26-presumida`, access `push`) y clonar con `git clone --depth 1 https://github.com/macproia88/sel-oct26-presumida /home/claude/sel-oct26-presumida` (timeout largo, ~10 min).
 2. `mkdir -p /home/claude/cvs/scripts /home/claude/cvs/registros /home/claude/cvs/textos /home/claude/cvs/adjuntos && cp /home/claude/sel-oct26-presumida/herramientas/* /home/claude/cvs/scripts/`
