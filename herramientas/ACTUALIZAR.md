@@ -25,7 +25,7 @@ Eso anota en `estado.json` → `excl` los IDs marcados "Descartado" en cada tabl
 
 ### 1c. Descartados que mandan por mail desde las páginas de GitHub (Ale y Sebastián usan estas)
 Las páginas con contraseña (`https://macproia88.github.io/sel-oct26-presumida/` = Equipo/Ale y `.../encargados.html` = Encargados/Sebastián) guardan los estados en el celular de cada uno; cuando marcan "Descartado" aparece la barra "Mandar descartados", que arma un mail a lapresumidapastas@gmail.com con asunto `DESCARTES SELECCION equipo` o `DESCARTES SELECCION encargados`, un `CODIGO` (sale de la contraseña) y una línea `<id> | <nombre>` por candidato.
-- Buscá con `mcp__Gmail__search_threads`: `subject:"DESCARTES SELECCION" newer_than:4d` (busca también en Enviados). Saltá los message IDs que ya están en `estado.json` → `descartes_mails`.
+- Buscá con `mcp__Gmail__search_threads`: `subject:"DESCARTES SELECCION" newer_than:4d` (busca también en Enviados). OJO: Gmail agrupa los mails de Ale en UN mismo hilo y la búsqueda solo muestra los 5 más viejos de cada hilo, así que para cada hilo encontrado usá `mcp__Gmail__get_thread` para ver TODOS sus mensajes. Saltá los message IDs que ya están en `estado.json` → `descartes_mails`.
 - Para cada mensaje: `mcp__Gmail__get_message` con `PLAIN_TEXT`, guardá el cuerpo en `/home/claude/cvs/desc_<ID>.txt` y corré
   `cd /home/claude/cvs && python3 -I scripts/construir.py descartes_mail /home/claude/sel-oct26-presumida /home/claude/cvs CLAVE /home/claude/cvs/desc_<ID>.txt`
   (imprime cuántos sumó; si dice IGNORADO, el código no coincide: no lo cuentes y avisalo). Después agregá ese message ID a `descartes_mails` en `estado.json`.
