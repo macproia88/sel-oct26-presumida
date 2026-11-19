@@ -113,7 +113,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
 .envbar button{font:inherit;font-weight:700;background:var(--yolk);color:var(--ink-on-yolk);border:0;border-radius:8px;padding:8px 12px;cursor:pointer}
 .reenviar{font-size:13px;color:var(--link);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
 </style></head><body>
-<div id="lp-upd" style="font:12px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;color:#6b6b6b;text-align:right;padding:6px 16px;position:relative;z-index:31">Última actualización: 19/11/2026 a las 07:40 (hora Argentina)</div>
+<div id="lp-upd" style="font:12px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;color:#6b6b6b;text-align:right;padding:6px 16px;position:relative;z-index:31">Última actualización: 19/11/2026 a las 11:59 (hora Argentina)</div>
 
 <div class="lock" id="lock"><form id="lockForm">
   <h2>Selección <span style="background:var(--yolk);padding:0 6px">Octubre</span></h2>
@@ -141,6 +141,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
     <select id="fGrupo" aria-label="Permanencia"><option value="">Toda permanencia</option></select>
     <select id="fEstado" aria-label="Estado"><option value="">Todos los estados</option></select>
     <select id="fEnc" aria-label="Encargados"><option value="">Encargados: todos</option><option value="si">Fueron encargados</option><option value="estable">Encargados estables (2 años o más)</option></select>
+    <select id="fOrden" aria-label="Orden"><option value="nuevo">Orden: CV más nuevo primero</option><option value="viejo">Orden: CV más viejo primero</option><option value="puntaje">Orden: por puntaje</option></select>
   </div>
   <div class="count" id="count"></div>
   <div class="list" id="list"></div>
@@ -280,6 +281,11 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
 
     const meta = el('div','meta');
     const m = (lab, val) => { const s = el('span'); s.append(document.createTextNode(lab+' ')); s.append(el('b',null,val)); meta.append(s); };
+    const fdm = x => x.slice(8,10) + '/' + x.slice(5,7) + '/' + x.slice(0,4);
+    if (c.env && c.env.length){
+      const e = c.env.slice().reverse();
+      m('CV enviado:', fdm(e[0]) + (e.length > 1 ? ' (antes también: ' + e.slice(1).map(fdm).join(', ') + ')' : ''));
+    } else m('CV enviado:', 'sin fecha');
     m('Puesto:', c.puesto + (c.ded ? ' (deducido)' : ''));
     m('Promedio:', c.prom == null ? 'sin fechas' : c.prom + ' meses/trabajo');
     m('Trabajos < 1 año:', String(c.cortos));
@@ -403,6 +409,10 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
       }
       return true;
     });
+    const ord = $('#fOrden').value;
+    const ult = c => (c.env && c.env.length) ? c.env[c.env.length-1] : '';
+    if (ord === 'nuevo') rows.sort((a,b) => ult(b).localeCompare(ult(a)) || a.pos - b.pos);
+    else if (ord === 'viejo') rows.sort((a,b) => (ult(a)||'9999').localeCompare(ult(b)||'9999') || a.pos - b.pos);
     const list = $('#list'); list.textContent = '';
     $('#count').textContent = rows.length + ' candidato' + (rows.length===1?'':'s') + ' en esta lista';
     if (!rows.length){ list.append(el('p','empty','No hay candidatos con estos filtros.')); return; }
@@ -433,7 +443,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
   document.getElementById('envbtn').onclick = () => mandar(false);
   document.getElementById('reenviar').onclick = () => mandar(true);
   barraEnvio();
-  ['#q','#fPart','#fGrupo','#fEstado','#fEnc'].forEach(s => $(s).addEventListener('input', render));
+  ['#q','#fPart','#fGrupo','#fEstado','#fEnc','#fOrden'].forEach(s => $(s).addEventListener('input', render));
 
   // Estados compartidos (Llamar / Entrevista / ...) guardados en el tablero
   (async () => {

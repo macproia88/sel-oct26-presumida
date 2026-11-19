@@ -12,7 +12,7 @@ Uso:
 
 REPO = carpeta del repositorio de GitHub; WORK = carpeta de trabajo.
 """
-import sys, os, json, glob, base64, secrets, shutil, subprocess
+import sys, os, json, glob, base64, secrets, shutil, subprocess, re
 
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
@@ -250,7 +250,7 @@ def es_encargado(c):
 
 TABS_EQUIPO = None  # usa las pestañas de la plantilla (Atención, Cocina, Revisar a mano)
 TABS_ENC = [
-    ['enc', 'Encargados', 'Fueron encargados/as (de local, turno, salón, caja o cocina, supervisores, gerentes de turno) y cumplen el aviso. De mayor a menor puntaje. Con el filtro "Encargados estables" ves solo los que duraron 2 años o más en promedio.'],
+    ['enc', 'Encargados', 'Fueron encargados/as (de local, turno, salón, caja o cocina, supervisores, gerentes de turno) y cumplen el aviso. Ordenados por la fecha en que mandaron el CV, los más nuevos primero (con el selector de orden los ves por puntaje). Con el filtro "Encargados estables" ves solo los que duraron 2 años o más en promedio.'],
 ]
 
 
@@ -259,7 +259,7 @@ def datos_tablero(da, clave_t, excl_ids, corte):
     if clave_t == 'equipo':
         t['cands'] = [c for c in t['cands'] if c['id'] not in excl_ids]
         t['tabs'] = [
-            ['atencion', 'Atención', 'Cumplen el aviso y no cambian de trabajo seguido. Primero los estables (2 años o más), después los intermedios y al final los que no tienen fechas; dentro de cada grupo, de mayor a menor puntaje.'],
+            ['atencion', 'Atención', 'Cumplen el aviso y no cambian de trabajo seguido. Están ordenados por la fecha en que mandaron el CV, los más nuevos primero; con el selector de orden podés verlos por puntaje (primero los estables, después los intermedios).'],
             ['cocina', 'Cocina', 'Igual que Atención, para la búsqueda de cocinera/o.'],
             ['enc', 'Encargados', 'Los de Atención y Cocina que fueron encargados/as (de local, turno, salón, caja o cocina, supervisores, gerentes de turno). Son los mismos que ve Sebastián en su tablero; acá siguen apareciendo también en Atención o Cocina.'],
             ['revisar', 'Revisar a mano', 'No se pudo leer el CV (mandaron un link de Drive, el mail no traía adjunto o el archivo no se abrió). Abrilos con el botón.']]
@@ -378,6 +378,14 @@ def armar(repo, work, pw, corte):
                 info = None
         if not info: sin_cv += 1
         c['cv_gh'] = info['gh'] if info else ''; c['cv_art'] = info['art'] if info else ''; c['cvt'] = info['t'] if info else ''
+        env = set()
+        for mid in c['mids']:
+            rp = os.path.join(work, 'registros', mid.split('_')[0] + '.json')
+            if os.path.exists(rp):
+                fm = (json.load(open(rp)).get('fecha_mail') or '')[:10]
+                if re.match(r'\d{4}-\d{2}-\d{2}$', fm): env.add(fm)
+        if not env and re.match(r'\d{4}-\d{2}-\d{2}', c.get('fecha') or ''): env.add(c['fecha'][:10])
+        c['env'] = sorted(env)  # fechas en que mandó el CV (la última = la más reciente)
         c.pop('mids', None)
     # 3) tablero GitHub (encriptado)
     dg = json.loads(json.dumps(d))

@@ -120,6 +120,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
     <select id="fGrupo" aria-label="Permanencia"><option value="">Toda permanencia</option></select>
     <select id="fEstado" aria-label="Estado"><option value="">Todos los estados</option></select>
     <select id="fEnc" aria-label="Encargados"><option value="">Encargados: todos</option><option value="si">Fueron encargados</option><option value="estable">Encargados estables (2 años o más)</option></select>
+    <select id="fOrden" aria-label="Orden"><option value="nuevo">Orden: CV más nuevo primero</option><option value="viejo">Orden: CV más viejo primero</option><option value="puntaje">Orden: por puntaje</option></select>
   </div>
   <div class="count" id="count"></div>
   <div class="list" id="list"></div>
@@ -214,6 +215,11 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
 
     const meta = el('div','meta');
     const m = (lab, val) => { const s = el('span'); s.append(document.createTextNode(lab+' ')); s.append(el('b',null,val)); meta.append(s); };
+    const fdm = x => x.slice(8,10) + '/' + x.slice(5,7) + '/' + x.slice(0,4);
+    if (c.env && c.env.length){
+      const e = c.env.slice().reverse();
+      m('CV enviado:', fdm(e[0]) + (e.length > 1 ? ' (antes también: ' + e.slice(1).map(fdm).join(', ') + ')' : ''));
+    } else m('CV enviado:', 'sin fecha');
     m('Puesto:', c.puesto + (c.ded ? ' (deducido)' : ''));
     m('Promedio:', c.prom == null ? 'sin fechas' : c.prom + ' meses/trabajo');
     m('Trabajos < 1 año:', String(c.cortos));
@@ -337,6 +343,10 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
       }
       return true;
     });
+    const ord = $('#fOrden').value;
+    const ult = c => (c.env && c.env.length) ? c.env[c.env.length-1] : '';
+    if (ord === 'nuevo') rows.sort((a,b) => ult(b).localeCompare(ult(a)) || a.pos - b.pos);
+    else if (ord === 'viejo') rows.sort((a,b) => (ult(a)||'9999').localeCompare(ult(b)||'9999') || a.pos - b.pos);
     const list = $('#list'); list.textContent = '';
     $('#count').textContent = rows.length + ' candidato' + (rows.length===1?'':'s') + ' en esta lista';
     if (!rows.length){ list.append(el('p','empty','No hay candidatos con estos filtros.')); return; }
@@ -346,7 +356,7 @@ details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--l
   if (D.titulo){ const h = $('#titulo'); h.textContent = D.titulo[0] + ' '; h.append(el('span', null, D.titulo[1])); document.title = D.titulo[0] + ' ' + D.titulo[1]; }
   $('#sub').textContent = (D.quien ? D.quien + ' · ' : '') + 'CVs recibidos hasta el ' + (D.corte || D.generado) + ' · ' + D.personas + ' candidatos que cumplen o hay que revisar · ' + (D.descartados || 0) + ' descartados (no cumplen, cambian seguido o menos de 79 puntos)' + (D.desc_tablero ? ' · ' + D.desc_tablero + ' descartados a mano en este tablero' : '');
   fillSelects(); renderTabs(); render();
-  ['#q','#fPart','#fGrupo','#fEstado','#fEnc'].forEach(s => $(s).addEventListener('input', render));
+  ['#q','#fPart','#fGrupo','#fEstado','#fEnc','#fOrden'].forEach(s => $(s).addEventListener('input', render));
 
   // Estados compartidos (Llamar / Entrevista / ...) guardados en el tablero
   (async () => {
