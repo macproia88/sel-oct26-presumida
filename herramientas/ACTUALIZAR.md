@@ -52,6 +52,7 @@ Las páginas con contraseña (`https://macproia88.github.io/sel-oct26-presumida/
 - Recalculá el Excel con el script `recalc.py` de la skill xlsx (cargar la skill) y confirmá 0 errores.
 
 ## 5. Publicar
+**Orden (desde el 22/11/2026):** primero GitHub (5.1), después archivar en Gmail (5.3) y mandar el aviso (paso 6), y recién al final publicar los tableros de Claude (5.2). Publicar en Claude a veces queda esperando una aprobación y corta la corrida; así el aviso a Juan sale igual.
 1. GitHub: `cd /home/claude/sel-oct26-presumida && git fetch origin main && git add -A && git commit -m "Actualización DD/MM" && git push`
    (si el push falla por acceso, avisale a Walter que hay que reconectar GitHub en claude.ai → Personalización → Conectores → Integración con GitHub).
 2. Tablero de Claude (URL en `estado.json` → `artifact_url`): primero `Artifact` action `read` con esa url; después `Artifact` publish con `url`, `file_path: /home/claude/cvs/tablero_seleccion.html` y `files` = los CVs nuevos de `nuevos_artifact.json` mapeados como `{"cv/<archivo>": "artifact/cv/<archivo>"}` (rutas relativas a `/home/claude/cvs`; hasta 250 por publicación). Sin `capabilities` (se mantienen). Si el publish se rechaza por una versión más nueva, hacé `Artifact` action `read` de la url y volvé a publicar con `url`.
